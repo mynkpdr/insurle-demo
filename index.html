@@ -121,7 +121,8 @@ pre{font-family:var(--mono);font-size:.8rem;line-height:1.75;color:#abb2bf;white
 .claims-sec-type{font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.12em;color:var(--text3)}
 .chevron{color:var(--text3);transition:transform .2s;font-size:.8rem}
 .claims-section.open .chevron{transform:rotate(180deg)}
-.claims-list{border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden}
+.claims-list{display:none;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden}
+.claims-section.open .claims-list{display:block}
 .claim-row{display:flex;border-bottom:1px solid var(--border);align-items:stretch}.claim-row:last-child{border-bottom:none}
 .claim-num{width:50px;display:flex;align-items:center;justify-content:center;background:var(--surface2);font-family:var(--mono);font-size:.75rem;color:var(--text3);border-right:1px solid var(--border);flex-shrink:0}
 .claim-body{flex:1;padding:16px 20px;background:var(--surface)}
