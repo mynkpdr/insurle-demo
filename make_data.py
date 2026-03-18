@@ -23,709 +23,475 @@ INSURLE_RULES = {
 %% AutoGuard Vehicle Insurance — InsurLE Contract Rules
 %% Policy: AG-VH-2024-001  ·  4-Level Nested Predicate Hierarchy
 
-%% ════ LEVEL 1: Top-level validity ════
 valid_claim(C) :-
-    driver_fully_eligible(C),        %% L1→L2
-    vehicle_authorization_valid(C),  %% L1→L2
-    incident_circumstances_covered(C),%% L1→L2
-    claim_procedure_followed(C).     %% L1→L2
+    driver_fully_eligible(C) :-
+        age_eligible(C) :-
+            age(C, A), A >= 21,
+            driving_experience_months(C, E), E >= 12,
+            age_class_verified(C, A, E) :-
+                A >= 25, E >= 24.  %% Standard driver
+            age_class_verified(C, A, E) :-
+                A >= 21, A < 25, E >= 12,
+                novice_endorsement(C, true). %% Young driver
 
-%% ════ LEVEL 2: Driver Eligibility ════
-driver_fully_eligible(C) :-
-    age_eligible(C),             %% L2→L3
-    license_compliant(C),        %% L2→L3
-    driving_history_acceptable(C). %% L2→L3
+        license_compliant(C) :-
+            license_valid(C, true),
+            license_expired(C, false),
+            license_jurisdiction(C, Jur),
+            recognized_jurisdiction(Jur) :-
+                recognized_jurisdiction(us_state).
+                recognized_jurisdiction(canada_province).
+                recognized_jurisdiction(us_territory).
+            license_class_valid(C) :-
+                license_class(C, Class),
+                member(Class, [class_a, class_b, class_c, class_d]).
 
-%% ════ LEVEL 3: Age & Experience ════
-age_eligible(C) :-
-    age(C, A), A >= 21,                       %% L3→L4
-    driving_experience_months(C, E), E >= 12, %% L3→L4
-    age_class_verified(C, A, E).              %% L3→L4
+        driving_history_acceptable(C) :-
+            dui_history(C, N),
+            fault_accidents_36mo(C, F),
+            history_within_limits(C, N, F) :-
+                history_within_limits(_, 0, F) :- F =< 2.
+                history_within_limits(C, N, _) :-
+                    N > 0,
+                    months_since_last_dui(C, M), M >= 60,
+                    high_risk_surcharge_paid(C, true),
+                    defensive_course_completed(C, true).
 
-%% ════ LEVEL 4: Age class sub-rules ════
-age_class_verified(C, A, E) :-
-    A >= 25, E >= 24.  %% Standard driver
-age_class_verified(C, A, E) :-
-    A >= 21, A < 25, E >= 12,
-    novice_endorsement(C, true). %% Young driver
+    vehicle_authorization_valid(C) :-
+        ownership_established(C) :-
+            vehicle_ownership(C, own),
+            title_on_file(C, true).
+        ownership_established(C) :-
+            vehicle_ownership(C, permitted),
+            permission_chain_valid(C) :-
+                written_permission(C, true),
+                permission_notarized(C, true),
+                owner_signature_verified(C, true).
 
-%% ════ LEVEL 3: License Compliance ════
-license_compliant(C) :-
-    license_valid(C, true),
-    license_expired(C, false),
-    license_jurisdiction(C, Jur),
-    recognized_jurisdiction(Jur),        %% L3→L4
-    license_class_valid(C).              %% L3→L4
+        vehicle_type_covered(C) :-
+            vehicle_class(C, passenger),
+            vehicle_weight_kg(C, W), W =< 3500,
+            not_race_modified(C) :-
+                race_modification_flag(C, false).
+            not_race_modified(C) :-
+                race_modification_flag(C, true),
+                sport_rider_attached(C, true).
 
-%% ════ LEVEL 4: Jurisdiction & class ════
-recognized_jurisdiction(us_state).
-recognized_jurisdiction(canada_province).
-recognized_jurisdiction(us_territory).
+        registration_current(C).
 
-license_class_valid(C) :-
-    license_class(C, Class),
-    member(Class, [class_a, class_b, class_c, class_d]).
+    incident_circumstances_covered(C) :-
+        sobriety_confirmed(C) :-
+            bac_within_limit(C) :-
+                bac(C, B), B =< 0.08.
+            narcotics_absent(C) :-
+                under_influence_narcotics(C, false).
 
-%% ════ LEVEL 3: Driving History ════
-driving_history_acceptable(C) :-
-    dui_history(C, N),
-    fault_accidents_36mo(C, F),
-    history_within_limits(C, N, F).     %% L3→L4
+        geographic_scope_met(C) :-
+            incident_location(C, Loc),
+            location_covered(C, Loc) :-
+                location_covered(_, continental_us).
+                location_covered(C, hawaii) :-
+                    pacific_extension_rider(C, true).
+                location_covered(C, alaska) :-
+                    pacific_extension_rider(C, true).
 
-%% ════ LEVEL 4: History threshold logic ════
-history_within_limits(_, 0, F) :- F =< 2.
-history_within_limits(C, N, _) :-
-    N > 0,
-    months_since_last_dui(C, M), M >= 60,
-    high_risk_surcharge_paid(C, true),
-    defensive_course_completed(C, true).
+        activity_not_excluded(C) :-
+            activity(C, A),
+            activity_risk_class(A, Class) :-
+                activity_risk_class(normal_driving, standard).
+                activity_risk_class(highway_driving, standard).
+                activity_risk_class(racing, prohibited).
+                activity_risk_class(deliberate_damage, prohibited).
+                activity_risk_class(illegal_transport, prohibited).
+            class_permitted(C, Class) :-
+                class_permitted(_, standard).
 
-%% ════ LEVEL 2: Vehicle Authorization ════
-vehicle_authorization_valid(C) :-
-    ownership_established(C),     %% L2→L3
-    vehicle_type_covered(C),      %% L2→L3
-    registration_current(C).      %% L2→L3
+    claim_procedure_followed(C) :-
+        reported_in_time(C) :-
+            days_since_incident(C, D),
+            reporting_deadline_met(C, D) :-
+                reporting_deadline_met(_, D) :- D =< 30.
 
-%% ════ LEVEL 3: Ownership ════
-ownership_established(C) :-
-    vehicle_ownership(C, own),
-    title_on_file(C, true).        %% L3→L4
-ownership_established(C) :-
-    vehicle_ownership(C, permitted),
-    permission_chain_valid(C).     %% L3→L4
+        evidence_complete(C) :-
+            police_report_status(C) :-
+                police_report(C, true).
+            police_report_status(C) :-
+                incident_value(C, V), V < 1000,
+                police_report(C, not_required).
 
-%% ════ LEVEL 4: Permission chain ════
-permission_chain_valid(C) :-
-    written_permission(C, true),
-    permission_notarized(C, true),
-    owner_signature_verified(C, true).
-
-%% ════ LEVEL 3: Vehicle Type ════
-vehicle_type_covered(C) :-
-    vehicle_class(C, passenger),
-    vehicle_weight_kg(C, W), W =< 3500,
-    not_race_modified(C).          %% L3→L4
-
-%% ════ LEVEL 4: Race modification check ════
-not_race_modified(C) :-
-    race_modification_flag(C, false).
-not_race_modified(C) :-
-    race_modification_flag(C, true),
-    sport_rider_attached(C, true).
-
-%% ════ LEVEL 2: Incident Circumstances ════
-incident_circumstances_covered(C) :-
-    sobriety_confirmed(C),        %% L2→L3
-    geographic_scope_met(C),      %% L2→L3
-    activity_not_excluded(C).     %% L2→L3
-
-%% ════ LEVEL 3: Sobriety ════
-sobriety_confirmed(C) :-
-    bac_within_limit(C),          %% L3→L4
-    narcotics_absent(C).          %% L3→L4
-
-%% ════ LEVEL 4: BAC & narcotics ════
-bac_within_limit(C) :-
-    bac(C, B), B =< 0.08.
-narcotics_absent(C) :-
-    under_influence_narcotics(C, false).
-
-%% ════ LEVEL 3: Geographic Scope ════
-geographic_scope_met(C) :-
-    incident_location(C, Loc),
-    location_covered(C, Loc).     %% L3→L4
-
-%% ════ LEVEL 4: Location rules ════
-location_covered(_, continental_us).
-location_covered(C, hawaii) :-
-    pacific_extension_rider(C, true).
-location_covered(C, alaska) :-
-    pacific_extension_rider(C, true).
-
-%% ════ LEVEL 3: Activity ════
-activity_not_excluded(C) :-
-    activity(C, A),
-    activity_risk_class(A, Class), %% L3→L4
-    class_permitted(C, Class).
-
-%% ════ LEVEL 4: Risk class rules ════
-activity_risk_class(normal_driving, standard).
-activity_risk_class(highway_driving, standard).
-activity_risk_class(racing, prohibited).
-activity_risk_class(deliberate_damage, prohibited).
-activity_risk_class(illegal_transport, prohibited).
-
-class_permitted(_, standard).
-
-%% ════ LEVEL 2: Claim Procedure ════
-claim_procedure_followed(C) :-
-    reported_in_time(C),           %% L2→L3
-    evidence_complete(C),          %% L2→L3
-    fraud_cleared(C).              %% L2→L3
-
-%% ════ LEVEL 3: Reporting ════
-reported_in_time(C) :-
-    days_since_incident(C, D),
-    reporting_deadline_met(C, D). %% L3→L4
-
-%% ════ LEVEL 4: Deadline threshold ════
-reporting_deadline_met(_, D) :- D =< 30.
-
-%% ════ LEVEL 3: Evidence ════
-evidence_complete(C) :-
-    police_report_status(C).      %% L3→L4
-
-%% ════ LEVEL 4: Police report conditions ════
-police_report_status(C) :-
-    police_report(C, true).
-police_report_status(C) :-
-    incident_value(C, V), V < 1000,
-    police_report(C, not_required).
-
-%% ════ LEVEL 3: Fraud screening ════
-fraud_cleared(C) :-
-    fraud_indicator(C, false),    %% L3→L4
-    siu_clearance(C).             %% L3→L4
-
-%% ════ LEVEL 4: SIU clearance ════
-siu_clearance(C) :-
-    siu_flag(C, none).
-siu_clearance(C) :-
-    siu_flag(C, reviewed),
-    siu_result(C, cleared).""",
+        fraud_cleared(C) :-
+            fraud_indicator(C, false),
+            siu_clearance(C) :-
+                siu_flag(C, none).
+            siu_clearance(C) :-
+                siu_flag(C, reviewed),
+                siu_result(C, cleared).""",
 
 "contract_health": """\
 %% VitalCare Health Insurance — InsurLE Contract Rules
 %% Policy: VC-HLT-2024-087  ·  4-Level Nested Predicate Hierarchy
 
-%% ════ LEVEL 1: Top-level validity ════
 valid_claim(C) :-
-    enrollment_requirements_met(C),   %% L1→L2
-    coverage_applicable(C),           %% L1→L2
-    financial_limits_satisfied(C),    %% L1→L2
-    timely_submission(C).             %% L1→L2
+    enrollment_requirements_met(C) :-
+        continuous_enrollment_satisfied(C) :-
+            continuous_enrollment_satisfied(C) :-
+                is_emergency(C, true).
+            continuous_enrollment_satisfied(C) :-
+                days_enrolled(C, D), D >= 90,
+                enrollment_lapse(C, false),
+                enrollment_continuous_verified(C) :-
+                    enrollment_continuous_verified(C) :-
+                        payment_gaps(C, G), G =< 0.
+                    enrollment_continuous_verified(C) :-
+                        payment_gaps(C, G), G > 0, G =< 15,
+                        late_payment_waiver(C, true).
 
-%% ════ LEVEL 2: Enrollment Requirements ════
-enrollment_requirements_met(C) :-
-    continuous_enrollment_satisfied(C),  %% L2→L3
-    pre_existing_waiting_satisfied(C),   %% L2→L3
-    premium_lapse_reviewed(C).           %% L2→L3
+        pre_existing_waiting_satisfied(C) :-
+            pre_existing_waiting_satisfied(C) :-
+                pre_existing_condition(C, false).
+            pre_existing_waiting_satisfied(C) :-
+                is_emergency(C, true).
+            pre_existing_waiting_satisfied(C) :-
+                pre_existing_condition(C, true),
+                condition_type(C, standard),
+                months_since_enrollment(C, M), M >= 12,
+                clinical_stability_confirmed(C) :-
+                    condition_stable_months(C, S), S >= 6.
+            pre_existing_waiting_satisfied(C) :-
+                pre_existing_condition(C, true),
+                condition_type(C, genetic),
+                months_since_enrollment(C, M), M >= 24,
+                genetic_counselor_review(C, true) :-
+                    counselor_assessment(C, approved).
 
-%% ════ LEVEL 3: Enrollment checks ════
-continuous_enrollment_satisfied(C) :-
-    is_emergency(C, true).              %% L3→L4
-continuous_enrollment_satisfied(C) :-
-    days_enrolled(C, D), D >= 90,       %% L3→L4
-    enrollment_lapse(C, false),
-    enrollment_continuous_verified(C).  %% L3→L4
+        premium_lapse_reviewed(C) :-
+            premium_lapse_reviewed(C) :-
+                enrollment_lapse(C, false).
+            premium_lapse_reviewed(C) :-
+                enrollment_lapse(C, true),
+                lapse_days(C, LD), LD =< 15,
+                reinstatement_approved(C).
 
-%% ════ LEVEL 4: Enrollment verification ════
-enrollment_continuous_verified(C) :-
-    payment_gaps(C, G), G =< 0.
-enrollment_continuous_verified(C) :-
-    payment_gaps(C, G), G > 0, G =< 15,
-    late_payment_waiver(C, true).
+    coverage_applicable(C) :-
+        provider_network_compliant(C) :-
+            provider_network_compliant(C) :-
+                is_emergency(C, true).
+            provider_network_compliant(C) :-
+                provider_network(C, in_network),
+                provider_credentialed(C) :-
+                    provider_license(C, valid),
+                    board_certification(C, true).
+            provider_network_compliant(C) :-
+                provider_network(C, out_of_network),
+                out_of_network_exception(C) :-
+                    no_in_network_available(C, true),
+                    referral_authorised(C, true).
 
-%% ════ LEVEL 3: Pre-existing condition wait ════
-pre_existing_waiting_satisfied(C) :-
-    pre_existing_condition(C, false).   %% L3→L4
-pre_existing_waiting_satisfied(C) :-
-    is_emergency(C, true).
-pre_existing_waiting_satisfied(C) :-
-    pre_existing_condition(C, true),
-    condition_type(C, standard),
-    months_since_enrollment(C, M), M >= 12,
-    clinical_stability_confirmed(C).   %% L3→L4
-pre_existing_waiting_satisfied(C) :-
-    pre_existing_condition(C, true),
-    condition_type(C, genetic),
-    months_since_enrollment(C, M), M >= 24,
-    genetic_counselor_review(C, true). %% L3→L4
+        authorization_obtained_if_needed(C) :-
+            authorization_obtained_if_needed(C) :-
+                is_emergency(C, true).
+            authorization_obtained_if_needed(C) :-
+                claim_amount(C, A), A =< 5000,
+                procedure_class(C, routine) :-
+                    procedure_type(C, T),
+                    member(T, [diagnostic, screening, preventive, minor_surgery]).
+            authorization_obtained_if_needed(C) :-
+                claim_amount(C, A), A > 5000,
+                prior_authorization(C, true),
+                mrb_review_completed(C) :-
+                    mrb_decision(C, approved),
+                    review_days_advance(C, D), D >= 10.
 
-%% ════ LEVEL 4: Stability & review checks ════
-clinical_stability_confirmed(C) :-
-    condition_stable_months(C, S), S >= 6.
-genetic_counselor_review(C, true) :-
-    counselor_assessment(C, approved).
+        not_cosmetic_only(C) :-
+            not_cosmetic_only(C) :-
+                cosmetic_only(C, false).
+            not_cosmetic_only(C) :-
+                cosmetic_only(C, true),
+                medical_necessity(C, true),
+                prior_authorization(C, true),
+                reconstructive_qualification(C) :-
+                    trauma_documented(C, true),
+                    reconstructive_type(C, T),
+                    member(T, [post_mastectomy, burn_repair, accident_reconstruction]).
 
-%% ════ LEVEL 3: Lapse review ════
-premium_lapse_reviewed(C) :-
-    enrollment_lapse(C, false).        %% L3→L4
-premium_lapse_reviewed(C) :-
-    enrollment_lapse(C, true),
-    lapse_days(C, LD), LD =< 15,
-    reinstatement_approved(C).
+    financial_limits_satisfied(C) :-
+        deductible_status_ok(C) :-
+            deductible_status_ok(C) :-
+                is_emergency(C, true).
+            deductible_status_ok(C) :-
+                annual_deductible_met(C, true),
+                deductible_year_match(C) :-
+                    policy_year(C, Y),
+                    service_year(C, Y).
 
-%% ════ LEVEL 2: Coverage Applicable ════
-coverage_applicable(C) :-
-    provider_network_compliant(C),           %% L2→L3
-    authorization_obtained_if_needed(C),     %% L2→L3
-    not_cosmetic_only(C).                    %% L2→L3
+        within_lifetime_max(C) :-
+            cumulative_claims(C, Total),
+            lifetime_headroom(C, Total, H) :-
+                lifetime_headroom(_, Total, H) :-
+                    H is 500000 - Total.
+            H > 0.
 
-%% ════ LEVEL 3: Network compliance ════
-provider_network_compliant(C) :-
-    is_emergency(C, true).
-provider_network_compliant(C) :-
-    provider_network(C, in_network),
-    provider_credentialed(C).           %% L3→L4
-provider_network_compliant(C) :-
-    provider_network(C, out_of_network),
-    out_of_network_exception(C).       %% L3→L4
+        annual_out_of_pocket_ok(C) :-
+            annual_oop(C, OOP), OOP =< 8000.
 
-%% ════ LEVEL 4: Provider credentialing ════
-provider_credentialed(C) :-
-    provider_license(C, valid),
-    board_certification(C, true).
-out_of_network_exception(C) :-
-    no_in_network_available(C, true),
-    referral_authorised(C, true).
-
-%% ════ LEVEL 3: Authorization ════
-authorization_obtained_if_needed(C) :-
-    is_emergency(C, true).
-authorization_obtained_if_needed(C) :-
-    claim_amount(C, A), A =< 5000,
-    procedure_class(C, routine).       %% L3→L4
-authorization_obtained_if_needed(C) :-
-    claim_amount(C, A), A > 5000,
-    prior_authorization(C, true),
-    mrb_review_completed(C).           %% L3→L4
-
-%% ════ LEVEL 4: MRB and procedure class ════
-procedure_class(C, routine) :-
-    procedure_type(C, T),
-    member(T, [diagnostic, screening, preventive, minor_surgery]).
-mrb_review_completed(C) :-
-    mrb_decision(C, approved),
-    review_days_advance(C, D), D >= 10.
-
-%% ════ LEVEL 3: Cosmetic check ════
-not_cosmetic_only(C) :-
-    cosmetic_only(C, false).
-not_cosmetic_only(C) :-
-    cosmetic_only(C, true),
-    medical_necessity(C, true),
-    prior_authorization(C, true),
-    reconstructive_qualification(C).   %% L3→L4
-
-%% ════ LEVEL 4: Reconstructive qualification ════
-reconstructive_qualification(C) :-
-    trauma_documented(C, true),
-    reconstructive_type(C, T),
-    member(T, [post_mastectomy, burn_repair, accident_reconstruction]).
-
-%% ════ LEVEL 2: Financial Limits ════
-financial_limits_satisfied(C) :-
-    deductible_status_ok(C),          %% L2→L3
-    within_lifetime_max(C),           %% L2→L3
-    annual_out_of_pocket_ok(C).       %% L2→L3
-
-%% ════ LEVEL 3: Deductible ════
-deductible_status_ok(C) :-
-    is_emergency(C, true).
-deductible_status_ok(C) :-
-    annual_deductible_met(C, true),
-    deductible_year_match(C).          %% L3→L4
-
-%% ════ LEVEL 4: Deductible year alignment ════
-deductible_year_match(C) :-
-    policy_year(C, Y),
-    service_year(C, Y).
-
-%% ════ LEVEL 3: Lifetime max ════
-within_lifetime_max(C) :-
-    cumulative_claims(C, Total),
-    lifetime_headroom(C, Total, H),    %% L3→L4
-    H > 0.
-
-%% ════ LEVEL 4: Headroom calculation ════
-lifetime_headroom(_, Total, H) :-
-    H is 500000 - Total.
-
-%% ════ LEVEL 3: Annual out-of-pocket ════
-annual_out_of_pocket_ok(C) :-
-    annual_oop(C, OOP), OOP =< 8000.
-
-%% ════ LEVEL 2: Timely Submission ════
-timely_submission(C) :-
-    days_since_service(C, D),
-    submission_within_window(C, D).   %% L2→L3
-
-%% ════ LEVEL 3: Window check ════
-submission_within_window(C, D) :-
-    D =< 180,
-    submission_channel_valid(C).       %% L3→L4
-
-%% ════ LEVEL 4: Submission channel ════
-submission_channel_valid(C) :-
-    submission_method(C, M),
-    member(M, [portal, mail, fax, in_person]).""",
+    timely_submission(C) :-
+        days_since_service(C, D),
+        submission_within_window(C, D) :-
+            D =< 180,
+            submission_channel_valid(C) :-
+                submission_method(C, M),
+                member(M, [portal, mail, fax, in_person]).""",
 
 "contract_travel": """\
 %% JetSafe Travel Insurance — InsurLE Contract Rules
 %% Policy: JS-TRV-2024-445  ·  4-Level Nested Predicate Hierarchy
 
-%% ════ LEVEL 1: Top-level validity ════
 valid_claim(C) :-
-    policy_validity_confirmed(C),       %% L1→L2
-    covered_event_occurred(C),          %% L1→L2
-    risk_profile_eligible(C),           %% L1→L2
-    documentation_complete(C).          %% L1→L2
+    policy_validity_confirmed(C) :-
+        purchased_within_window(C) :-
+            purchased_within_window(C) :-
+                days_after_deposit(C, D), D =< 21,
+                purchase_channel_valid(C) :-
+                    purchase_method(C, M),
+                    member(M, [online, agent, broker, direct]).
+            purchased_within_window(C) :-
+                claim_type(C, T),
+                \\+ member(T, [trip_cancellation]),
+                non_cancellation_policy_valid(C) :-
+                    policy_active_since(C, D), D >= 0.
 
-%% ════ LEVEL 2: Policy Validity ════
-policy_validity_confirmed(C) :-
-    purchased_within_window(C),         %% L2→L3
-    trip_not_already_commenced(C),      %% L2→L3
-    policy_status_active(C).            %% L2→L3
+        trip_not_already_commenced(C) :-
+            trip_commenced_at_purchase(C, false),
+            departure_date_check(C) :-
+                purchase_before_departure(C, true).
 
-%% ════ LEVEL 3: Purchase window ════
-purchased_within_window(C) :-
-    days_after_deposit(C, D), D =< 21,
-    purchase_channel_valid(C).          %% L3→L4
-purchased_within_window(C) :-
-    claim_type(C, T),
-    \\+ member(T, [trip_cancellation]),
-    non_cancellation_policy_valid(C).   %% L3→L4
+        policy_status_active(C) :-
+            policy_lapse(C, false),
+            premium_paid(C, true),
+            coverage_period_current(C) :-
+                incident_within_trip_dates(C, true).
 
-%% ════ LEVEL 4: Purchase & policy channel ════
-purchase_channel_valid(C) :-
-    purchase_method(C, M),
-    member(M, [online, agent, broker, direct]).
-non_cancellation_policy_valid(C) :-
-    policy_active_since(C, D), D >= 0.
+    covered_event_occurred(C) :-
+        covered_event_occurred(C) :-
+            claim_type(C, trip_cancellation),
+            valid_cancellation_reason(C) :-
+                cancellation_reason(C, R),
+                covered_reason_class(R, Class) :-
+                    covered_reason_class(illness, medical_class).
+                    covered_reason_class(injury, medical_class).
+                    covered_reason_class(death, bereavement_class).
+                    covered_reason_class(natural_disaster, force_majeure).
+                    covered_reason_class(airline_bankruptcy, carrier_failure).
+                    covered_reason_class(job_loss, employment_class).
+                    covered_reason_class(mandatory_evacuation, government_class).
+                class_authorised(Class) :-
+                    class_authorised(medical_class).
+                    class_authorised(bereavement_class).
+                    class_authorised(force_majeure).
+                    class_authorised(carrier_failure).
+                    class_authorised(employment_class).
+                    class_authorised(government_class).
 
-%% ════ LEVEL 3: Trip status ════
-trip_not_already_commenced(C) :-
-    trip_commenced_at_purchase(C, false),
-    departure_date_check(C).            %% L3→L4
+        covered_event_occurred(C) :-
+            claim_type(C, medical),
+            medical_event_covered(C) :-
+                medical_event_covered(C) :-
+                    medical_emergency(C, true),
+                    medical_facility_attended(C) :-
+                        facility_type(C, T),
+                        member(T, [hospital, clinic, emergency_room, ambulance]).
+                medical_event_covered(C) :-
+                    medical_emergency(C, false),
+                    treatment_required(C, true),
+                    pre_existing_condition(C, false),
+                    treating_physician_qualified(C) :-
+                        physician_license(C, valid).
 
-%% ════ LEVEL 4: Departure date verification ════
-departure_date_check(C) :-
-    purchase_before_departure(C, true).
+        covered_event_occurred(C) :-
+            claim_type(C, baggage),
+            baggage_loss_documented(C) :-
+                police_report_filed(C, true),
+                hours_to_report(C, H), H =< 24,
+                baggage_value_within_limit(C) :-
+                    baggage_value_within_limit(C) :-
+                        baggage_claimed_amount(C, B), B =< 2500.
+                    baggage_value_within_limit(C) :-
+                        baggage_claimed_amount(C, B), B > 2500,
+                        high_value_rider(C, true).
 
-%% ════ LEVEL 3: Policy active status ════
-policy_status_active(C) :-
-    policy_lapse(C, false),
-    premium_paid(C, true),
-    coverage_period_current(C).         %% L3→L4
+    risk_profile_eligible(C) :-
+        fit_at_purchase(C, true).
+    medically_fit_at_purchase(C) :-
+        fit_at_purchase(C, false),
+        pre_existing_waiver(C, true),
+        condition_stable_60_days(C, true).
 
-%% ════ LEVEL 4: Coverage period ════
-coverage_period_current(C) :-
-    incident_within_trip_dates(C, true).
+    destination_covered(C) :-
+        destination_advisory_level(C, L), L < 4.
 
-%% ════ LEVEL 2: Covered Event ════
-covered_event_occurred(C) :-
-    claim_type(C, trip_cancellation),
-    valid_cancellation_reason(C).       %% L2→L3
-covered_event_occurred(C) :-
-    claim_type(C, medical),
-    medical_event_covered(C).           %% L2→L3
-covered_event_occurred(C) :-
-    claim_type(C, baggage),
-    baggage_loss_documented(C).         %% L2→L3
+    activity_covered(C) :-
+        activity_covered(C) :-
+            activity(C, A), \\+ extreme_sport(A).
+        activity_covered(C) :-
+            activity(C, A), extreme_sport(A) :-
+                extreme_sport(base_jumping). extreme_sport(skydiving).
+                extreme_sport(free_solo_climbing). extreme_sport(cliff_diving).
+            adventure_rider(C, true).
 
-%% ════ LEVEL 3: Cancellation reason ════
-valid_cancellation_reason(C) :-
-    cancellation_reason(C, R),
-    covered_reason_class(R, Class),     %% L3→L4
-    class_authorised(Class).
-
-%% ════ LEVEL 4: Reason classification ════
-covered_reason_class(illness, medical_class).
-covered_reason_class(injury, medical_class).
-covered_reason_class(death, bereavement_class).
-covered_reason_class(natural_disaster, force_majeure).
-covered_reason_class(airline_bankruptcy, carrier_failure).
-covered_reason_class(job_loss, employment_class).
-covered_reason_class(mandatory_evacuation, government_class).
-
-class_authorised(medical_class).
-class_authorised(bereavement_class).
-class_authorised(force_majeure).
-class_authorised(carrier_failure).
-class_authorised(employment_class).
-class_authorised(government_class).
-
-%% ════ LEVEL 3: Medical event ════
-medical_event_covered(C) :-
-    medical_emergency(C, true),
-    medical_facility_attended(C).       %% L3→L4
-medical_event_covered(C) :-
-    medical_emergency(C, false),
-    treatment_required(C, true),
-    pre_existing_condition(C, false),
-    treating_physician_qualified(C).    %% L3→L4
-
-%% ════ LEVEL 4: Facility & physician checks ════
-medical_facility_attended(C) :-
-    facility_type(C, T),
-    member(T, [hospital, clinic, emergency_room, ambulance]).
-treating_physician_qualified(C) :-
-    physician_license(C, valid).
-
-%% ════ LEVEL 3: Baggage documentation ════
-baggage_loss_documented(C) :-
-    police_report_filed(C, true),
-    hours_to_report(C, H), H =< 24,
-    baggage_value_within_limit(C).      %% L3→L4
-
-%% ════ LEVEL 4: Baggage value cap ════
-baggage_value_within_limit(C) :-
-    baggage_claimed_amount(C, B), B =< 2500.
-baggage_value_within_limit(C) :-
-    baggage_claimed_amount(C, B), B > 2500,
-    high_value_rider(C, true).
-
-%% ════ LEVEL 2: Risk Profile ════
-risk_profile_eligible(C) :-
-    fit_at_purchase(C, true).
-medically_fit_at_purchase(C) :-
-    fit_at_purchase(C, false),
-    pre_existing_waiver(C, true),
-    condition_stable_60_days(C, true).
-
-destination_covered(C) :-
-    destination_advisory_level(C, L), L < 4.
-
-activity_covered(C) :-
-    activity(C, A), \\+ extreme_sport(A).
-activity_covered(C) :-
-    activity(C, A), extreme_sport(A),
-    adventure_rider(C, true).
-
-extreme_sport(base_jumping). extreme_sport(skydiving).
-extreme_sport(free_solo_climbing). extreme_sport(cliff_diving).
-
-%% ── Level 2: Documentation & Exclusions ──────
-documentation_complete(C) :-
-    timely_notification(C),
-    documents_provided(C),
-    exclusions_clear(C).
-
-timely_notification(C) :- claim_type(C, baggage), hours_to_report(C, H), H =< 24.
-timely_notification(C) :- claim_type(C, T), T \\= baggage.
-
-documents_provided(C) :- documentation_provided(C, true).
-
-exclusions_clear(C) :-
-    under_influence(C, false),
-    war_related(C, false).""",
+    documentation_complete(C) :-
+        timely_notification(C) :-
+            timely_notification(C) :-
+                claim_type(C, baggage), hours_to_report(C, H), H =< 24.
+            timely_notification(C) :-
+                claim_type(C, T), T \\= baggage.
+        documents_provided(C) :-
+            documentation_provided(C, true).
+        exclusions_clear(C) :-
+            under_influence(C, false),
+            war_related(C, false).""",
 
 "contract_accident": """\
 %% ShieldPlus Personal Accident — InsurLE Contract Rules
 %% Policy: SP-ACC-2024-209  ·  4-Level Nested Predicate Hierarchy
 
-%% ════ LEVEL 1: Top-level validity ════
 valid_claim(C) :-
-    accidental_origin_confirmed(C),   %% L1→L2
-    claimant_fully_eligible(C),       %% L1→L2
-    medical_criteria_met(C),          %% L1→L2
-    procedure_compliant(C).           %% L1→L2
+    accidental_origin_confirmed(C) :-
+        cause_is_accidental(C) :-
+            accident_type(C, T),
+            accident_category(T, Cat) :-
+                accident_category(fall, physical_trauma).
+                accident_category(collision, physical_trauma).
+                accident_category(burn, physical_trauma).
+                accident_category(drowning, environmental).
+                accident_category(electrocution, environmental).
+                accident_category(workplace_accident, occupational).
+                accident_category(road_accident, vehicular).
+                accident_category(sports_accident, recreational).
+            category_covered(Cat) :-
+                category_covered(physical_trauma).
+                category_covered(environmental).
+                category_covered(occupational).
+                category_covered(vehicular).
+                category_covered(recreational).
 
-%% ════ LEVEL 2: Accidental Origin ════
-accidental_origin_confirmed(C) :-
-    cause_is_accidental(C),           %% L2→L3
-    not_self_inflicted(C),            %% L2→L3
-    not_excluded_cause(C),            %% L2→L3
-    sole_cause_verified(C).           %% L2→L3
+        not_self_inflicted(C) :-
+            not_self_inflicted(C) :-
+                self_inflicted(C, false),
+                psychological_assessment_required(C, false).
+            not_self_inflicted(C) :-
+                self_inflicted(C, false),
+                psychological_assessment_required(C, true),
+                psych_assessment_clear(C) :-
+                    psych_report(C, no_intent).
 
-%% ════ LEVEL 3: Accident classification ════
-cause_is_accidental(C) :-
-    accident_type(C, T),
-    accident_category(T, Cat),         %% L3→L4
-    category_covered(Cat).
+        not_excluded_cause(C) :-
+            cause(C, Cause),
+            cause_exclusion_class(Cause, Class) :-
+                cause_exclusion_class(workplace_accident,  occupational_class).
+                cause_exclusion_class(road_accident,       vehicular_class).
+                cause_exclusion_class(fall,                accidental_class).
+                cause_exclusion_class(sports_accident,     recreational_class).
+                cause_exclusion_class(self_inflicted,      excluded_class).
+                cause_exclusion_class(criminal_activity,   excluded_class).
+                cause_exclusion_class(war,                 excluded_class).
+                cause_exclusion_class(professional_sports, excluded_class).
+            class_not_excluded(Class) :-
+                class_not_excluded(occupational_class).
+                class_not_excluded(vehicular_class).
+                class_not_excluded(accidental_class).
+                class_not_excluded(recreational_class).
 
-%% ════ LEVEL 4: Accident taxonomy ════
-accident_category(fall, physical_trauma).
-accident_category(collision, physical_trauma).
-accident_category(burn, physical_trauma).
-accident_category(drowning, environmental).
-accident_category(electrocution, environmental).
-accident_category(workplace_accident, occupational).
-accident_category(road_accident, vehicular).
-accident_category(sports_accident, recreational).
+        sole_cause_verified(C) :-
+            contributing_disease(C, false) :-
+                comorbidity_flag(C, none).
+            contributing_infirmity(C, false) :-
+                pre_existing_infirmity(C, false).
 
-category_covered(physical_trauma).
-category_covered(environmental).
-category_covered(occupational).
-category_covered(vehicular).
-category_covered(recreational).
+    claimant_fully_eligible(C) :-
+        age_in_range(C) :-
+            age(C, A), A >= 18, A =< 70,
+            age_band_confirmed(C, A) :-
+                age_band_confirmed(_, A) :- A >= 18, A =< 65.
+                age_band_confirmed(C, A) :-
+                    A > 65, A =< 70,
+                    senior_extension_policy(C, true).
 
-%% ════ LEVEL 3: Self-infliction check ════
-not_self_inflicted(C) :-
-    self_inflicted(C, false),
-    psychological_assessment_required(C, false). %% L3→L4
-not_self_inflicted(C) :-
-    self_inflicted(C, false),
-    psychological_assessment_required(C, true),
-    psych_assessment_clear(C).         %% L3→L4
+        intoxication_negative(C) :-
+            intoxicated(C, false),
+            narcotics_influence(C, false),
+            toxicology_report_status(C) :-
+                toxicology_report_status(C) :-
+                    toxicology_required(C, false).
+                toxicology_report_status(C) :-
+                    toxicology_required(C, true),
+                    toxicology_result(C, negative).
 
-%% ════ LEVEL 4: Assessment clearance ════
-psych_assessment_clear(C) :-
-    psych_report(C, no_intent).
+        not_professional_sport(C) :-
+            activity(C, A),
+            sport_payment_status(C, A, Status) :-
+                sport_payment_status(C, A, paid_athlete) :-
+                    receives_remuneration(C, true),
+                    member(A, [rugby, football, cricket, basketball, baseball]).
+                sport_payment_status(C, _, amateur) :-
+                    receives_remuneration(C, false).
+            Status \\= paid_athlete.
 
-%% ════ LEVEL 3: Cause exclusion list ════
-not_excluded_cause(C) :-
-    cause(C, Cause),
-    cause_exclusion_class(Cause, Class), %% L3→L4
-    class_not_excluded(Class).
+        occupation_eligible(C) :-
+            occupation_class(C, Class),
+            hazardous_occupation_handled(C, Class) :-
+                hazardous_occupation_handled(_, standard).
+                hazardous_occupation_handled(C, hazardous) :-
+                    hazardous_rider(C, true),
+                    hazard_premium_paid(C, true).
 
-%% ════ LEVEL 4: Exclusion taxonomy ════
-cause_exclusion_class(workplace_accident,  occupational_class).
-cause_exclusion_class(road_accident,       vehicular_class).
-cause_exclusion_class(fall,                accidental_class).
-cause_exclusion_class(sports_accident,     recreational_class).
-cause_exclusion_class(self_inflicted,      excluded_class).
-cause_exclusion_class(criminal_activity,   excluded_class).
-cause_exclusion_class(war,                 excluded_class).
-cause_exclusion_class(professional_sports, excluded_class).
+    medical_criteria_met(C) :-
+        medical_evidence_provided(C) :-
+            medical_evidence(C, true),
+            evidence_currency(C, Days) :-
+                evidence_date_delta(C, Days).
+            Days =< 30.
 
-class_not_excluded(occupational_class).
-class_not_excluded(vehicular_class).
-class_not_excluded(accidental_class).
-class_not_excluded(recreational_class).
+        licensed_provider_confirms(C) :-
+            attending_physician_licensed(C, true),
+            specialty_appropriate(C) :-
+                physician_specialty(C, S),
+                member(S, [general_practitioner, emergency_medicine, orthopaedics, neurology, cardiology, surgery]).
 
-%% ════ LEVEL 3: Sole cause check ════
-sole_cause_verified(C) :-
-    contributing_disease(C, false),    %% L3→L4
-    contributing_infirmity(C, false).
+        injury_consistent_with_claim(C) :-
+            injury_severity(C, Sev),
+            claim_type(C, Type),
+            severity_claim_alignment(Sev, Type) :-
+                severity_claim_alignment(minor,    disability) :- !.
+                severity_claim_alignment(moderate, disability).
+                severity_claim_alignment(severe,   disability).
+                severity_claim_alignment(severe,   accidental_death).
+                severity_claim_alignment(fatal,    accidental_death).
+                severity_claim_alignment(minor,    dismemberment) :- !.
+                severity_claim_alignment(moderate, dismemberment).
 
-%% ════ LEVEL 4: Contributing factor checks ════
-contributing_disease(C, false) :-
-    comorbidity_flag(C, none).
-contributing_infirmity(C, false) :-
-    pre_existing_infirmity(C, false).
+    procedure_compliant(C) :-
+        notification_in_time(C) :-
+            notification_in_time(C) :-
+                claim_type(C, accidental_death),
+                days_to_notify(C, D), D =< 30.
+            notification_in_time(C) :-
+                claim_type(C, disability),
+                days_to_notify(C, D), D =< 14.
 
-%% ════ LEVEL 2: Claimant Eligibility ════
-claimant_fully_eligible(C) :-
-    age_in_range(C),                   %% L2→L3
-    intoxication_negative(C),          %% L2→L3
-    not_professional_sport(C),         %% L2→L3
-    occupation_eligible(C).            %% L2→L3
+        benefit_type_valid(C) :-
+            claim_type(C, T),
+            benefit_coverage_class(T, _) :-
+                benefit_coverage_class(accidental_death, principal_benefit).
+                benefit_coverage_class(dismemberment,    principal_benefit).
+                benefit_coverage_class(disability,       periodic_benefit).
 
-%% ════ LEVEL 3: Age verification ════
-age_in_range(C) :-
-    age(C, A), A >= 18, A =< 70,
-    age_band_confirmed(C, A).          %% L3→L4
-
-%% ════ LEVEL 4: Age band sub-rules ════
-age_band_confirmed(_, A) :- A >= 18, A =< 65.  %% Standard band
-age_band_confirmed(C, A) :-
-    A > 65, A =< 70,
-    senior_extension_policy(C, true). %% Senior extension required
-
-%% ════ LEVEL 3: Intoxication check ════
-intoxication_negative(C) :-
-    intoxicated(C, false),
-    narcotics_influence(C, false),
-    toxicology_report_status(C).       %% L3→L4
-
-%% ════ LEVEL 4: Toxicology report ════
-toxicology_report_status(C) :-
-    toxicology_required(C, false).
-toxicology_report_status(C) :-
-    toxicology_required(C, true),
-    toxicology_result(C, negative).
-
-%% ════ LEVEL 3: Professional sport exclusion ════
-not_professional_sport(C) :-
-    activity(C, A),
-    sport_payment_status(C, A, Status), %% L3→L4
-    Status \\= paid_athlete.
-
-%% ════ LEVEL 4: Payment status check ════
-sport_payment_status(C, A, paid_athlete) :-
-    receives_remuneration(C, true),
-    member(A, [rugby, football, cricket, basketball, baseball]).
-sport_payment_status(C, _, amateur) :-
-    receives_remuneration(C, false).
-
-%% ════ LEVEL 3: Occupation eligibility ════
-occupation_eligible(C) :-
-    occupation_class(C, Class),
-    hazardous_occupation_handled(C, Class). %% L3→L4
-
-%% ════ LEVEL 4: Hazardous occupation handling ════
-hazardous_occupation_handled(_, standard).
-hazardous_occupation_handled(C, hazardous) :-
-    hazardous_rider(C, true),
-    hazard_premium_paid(C, true).
-
-%% ════ LEVEL 2: Medical Criteria ════
-medical_criteria_met(C) :-
-    medical_evidence_provided(C),     %% L2→L3
-    licensed_provider_confirms(C),    %% L2→L3
-    injury_consistent_with_claim(C).  %% L2→L3
-
-%% ════ LEVEL 3: Medical evidence ════
-medical_evidence_provided(C) :-
-    medical_evidence(C, true),
-    evidence_currency(C, Days), Days =< 30. %% L3→L4
-
-%% ════ LEVEL 4: Evidence currency ════
-evidence_currency(C, Days) :-
-    evidence_date_delta(C, Days).
-
-%% ════ LEVEL 3: Provider licensing ════
-licensed_provider_confirms(C) :-
-    attending_physician_licensed(C, true),
-    specialty_appropriate(C).          %% L3→L4
-
-%% ════ LEVEL 4: Specialty check ════
-specialty_appropriate(C) :-
-    physician_specialty(C, S),
-    member(S, [general_practitioner, emergency_medicine, orthopaedics,
-               neurology, cardiology, surgery]).
-
-%% ════ LEVEL 3: Injury-claim alignment ════
-injury_consistent_with_claim(C) :-
-    injury_severity(C, Sev),
-    claim_type(C, Type),
-    severity_claim_alignment(Sev, Type). %% L3→L4
-
-%% ════ LEVEL 4: Alignment matrix ════
-severity_claim_alignment(minor,    disability) :- !.
-severity_claim_alignment(moderate, disability).
-severity_claim_alignment(severe,   disability).
-severity_claim_alignment(severe,   accidental_death).
-severity_claim_alignment(fatal,    accidental_death).
-severity_claim_alignment(minor,    dismemberment) :- !.
-severity_claim_alignment(moderate, dismemberment).
-
-%% ════ LEVEL 2: Procedure Compliance ════
-procedure_compliant(C) :-
-    notification_in_time(C),           %% L2→L3
-    benefit_type_valid(C),             %% L2→L3
-    within_benefit_limits(C).          %% L2→L3
-
-%% ════ LEVEL 3: Notification deadline (OR gate) ════
-notification_in_time(C) :-
-    claim_type(C, accidental_death),
-    days_to_notify(C, D), D =< 30.    %% L3→L4
-notification_in_time(C) :-
-    claim_type(C, disability),
-    days_to_notify(C, D), D =< 14.    %% L3→L4
-
-%% ════ LEVEL 4: Deadline thresholds ════
-%% Death: 30 days, Disability: 14 days.
-
-%% ════ LEVEL 3: Benefit type validation ════
-benefit_type_valid(C) :-
-    claim_type(C, T),
-    benefit_coverage_class(T, _).      %% L3→L4
-
-%% ════ LEVEL 4: Benefit coverage taxonomy ════
-benefit_coverage_class(accidental_death, principal_benefit).
-benefit_coverage_class(dismemberment,    principal_benefit).
-benefit_coverage_class(disability,       periodic_benefit).
-
-%% ════ LEVEL 3: Benefit limit check ════
-within_benefit_limits(C) :-
-    claim_type(C, accidental_death),
-    claim_amount_usd(C, A), A =< 250000. %% L3→L4
-within_benefit_limits(C) :-
-    claim_type(C, disability),
-    claim_amount_usd(C, A), A =< 250000.""",
+        within_benefit_limits(C) :-
+            within_benefit_limits(C) :-
+                claim_type(C, accidental_death),
+                claim_amount_usd(C, A), A =< 250000.
+            within_benefit_limits(C) :-
+                claim_type(C, disability),
+                claim_amount_usd(C, A), A =< 250000.""",
 
 }
 
@@ -1137,13 +903,13 @@ CLAIMS = {
                           {"check": "Reported ≤ 30 days", "fact": "days_since_incident(C, 5)", "result": True, "reason": "5 ≤ 30 ✓"}
                       ]}
                   ]},
-                 {"rule": "police_report_filed/1", "label": "Police Report Verification", "result": True,
+                 {"rule": "evidence_complete/1", "label": "Police Report Verification", "result": True,
                   "sub_sub_checks": [
                       {"label": "Report check", "result": True, "leaf_checks": [
                           {"check": "Police report on file", "fact": "police_report(C, true)", "result": True, "reason": "Report filed ✓"}
                       ]}
                   ]},
-                 {"rule": "no_fraud/1", "label": "Fraud Indicator Screening", "result": True,
+                 {"rule": "fraud_cleared/1", "label": "Fraud Indicator Screening", "result": True,
                   "sub_sub_checks": [
                       {"label": "Fraud check", "result": True, "leaf_checks": [
                           {"check": "No fraud flags", "fact": "fraud_indicator(C, false)", "result": True, "reason": "Clean ✓"}
@@ -1220,7 +986,7 @@ CLAIMS = {
              ]},
             {"id": "b3", "label": "Incident Circumstances Covered", "icon": "🔍", "result": False,
              "sub_checks": [
-                 {"rule": "sober_at_incident/1", "label": "Sobriety Verification", "result": False,
+                 {"rule": "sobriety_confirmed/1", "label": "Sobriety Verification", "result": False,
                   "sub_sub_checks": [
                       {"label": "Sobriety checks", "result": False, "leaf_checks": [
                           {"check": "BAC ≤ 0.08 g/dL", "fact": "bac(C, 0.14)", "result": False, "reason": "0.14 > 0.08 — DUI VIOLATION ✗"},
@@ -1233,7 +999,7 @@ CLAIMS = {
                           {"check": "Continental US", "fact": "incident_location(C, continental_us)", "result": True, "reason": "In zone ✓"}
                       ]}
                   ]},
-                 {"rule": "not_excluded_activity/1", "label": "Activity Exclusions", "result": True,
+                 {"rule": "activity_not_excluded/1", "label": "Activity Exclusions", "result": True,
                   "sub_sub_checks": [
                       {"label": "Activity check", "result": True, "leaf_checks": [
                           {"check": "No excluded activity", "fact": "activity(C, normal_driving)", "result": True, "reason": "Normal driving ✓"}
@@ -1248,13 +1014,13 @@ CLAIMS = {
                           {"check": "Reported ≤ 30 days", "fact": "days_since_incident(C, 2)", "result": True, "reason": "2 ≤ 30 ✓"}
                       ]}
                   ]},
-                 {"rule": "police_report_filed/1", "label": "Police Report", "result": True,
+                 {"rule": "evidence_complete/1", "label": "Police Report", "result": True,
                   "sub_sub_checks": [
                       {"label": "Report check", "result": True, "leaf_checks": [
                           {"check": "Report filed", "fact": "police_report(C, true)", "result": True, "reason": "On file ✓"}
                       ]}
                   ]},
-                 {"rule": "no_fraud/1", "label": "Fraud Screening", "result": True,
+                 {"rule": "fraud_cleared/1", "label": "Fraud Screening", "result": True,
                   "sub_sub_checks": [
                       {"label": "Fraud check", "result": True, "leaf_checks": [
                           {"check": "No fraud flags", "fact": "fraud_indicator(C, false)", "result": True, "reason": "Clean ✓"}
@@ -1727,7 +1493,7 @@ CLAIMS = {
                           {"check": "Physician licensed", "fact": "attending_physician_licensed(C, true)", "result": True, "reason": "Licensed ✓"}
                       ]}
                   ]},
-                 {"rule": "injury_claim_compatibility/1", "label": "Injury-Claim Compatibility", "result": True,
+                 {"rule": "injury_consistent_with_claim/1", "label": "Injury-Claim Compatibility", "result": True,
                   "sub_sub_checks": [
                       {"label": "Compatibility checks", "result": True, "leaf_checks": [
                           {"check": "Moderate severity + disability", "fact": "injury_severity(C, moderate)", "result": True, "reason": "Compatible ✓"},
@@ -1837,7 +1603,7 @@ CLAIMS = {
                           {"check": "Physician licensed", "fact": "attending_physician_licensed(C, true)", "result": True, "reason": "Licensed ✓"}
                       ]}
                   ]},
-                 {"rule": "injury_claim_compatibility/1", "label": "Injury-Claim Compatibility", "result": True,
+                 {"rule": "injury_consistent_with_claim/1", "label": "Injury-Claim Compatibility", "result": True,
                   "sub_sub_checks": [
                       {"label": "Compatibility checks", "result": True, "leaf_checks": [
                           {"check": "Moderate severity + disability", "fact": "injury_severity(C, moderate)", "result": True, "reason": "Compatible ✓"},
@@ -1847,7 +1613,7 @@ CLAIMS = {
              ]},
             {"id": "b4", "label": "Procedure Compliant", "icon": "📋", "result": False,
              "sub_checks": [
-                 {"rule": "notification_deadline/1", "label": "Notification Deadline (OR gate)", "result": False,
+                 {"rule": "notification_in_time/1", "label": "Notification Deadline (OR gate)", "result": False,
                   "sub_sub_checks": [
                       {"label": "Deadline check", "result": False, "leaf_checks": [
                           {"check": "Death ≤ 30 days?", "fact": "claim_type(C, disability) — N/A", "result": False, "reason": "Not an accidental death claim ✗"},
@@ -1872,6 +1638,112 @@ CLAIMS = {
 #  BUILD OUTPUT
 # ─────────────────────────────────────────────
 
+def propagate_validation_results(validation_tree):
+    """Force result propagation from deepest leaf to top-level branch."""
+
+    def derive_leaf_result(leaf):
+        return bool(leaf.get("result", False))
+
+    def derive_sub_sub_result(sub_sub):
+        leaves = sub_sub.get("leaf_checks") or []
+        if leaves:
+            sub_sub["result"] = all(derive_leaf_result(leaf) for leaf in leaves)
+        else:
+            sub_sub["result"] = bool(sub_sub.get("result", False))
+        return sub_sub["result"]
+
+    def derive_sub_result(sub):
+        sub_sub_checks = sub.get("sub_sub_checks") or []
+        leaves = sub.get("leaf_checks") or []
+
+        if sub_sub_checks:
+            sub["result"] = all(derive_sub_sub_result(sub_sub) for sub_sub in sub_sub_checks)
+        elif leaves:
+            sub["result"] = all(derive_leaf_result(leaf) for leaf in leaves)
+        else:
+            sub["result"] = bool(sub.get("result", False))
+        return sub["result"]
+
+    for branch in validation_tree:
+        sub_checks = branch.get("sub_checks") or []
+        if sub_checks:
+            branch["result"] = all(derive_sub_result(sub) for sub in sub_checks)
+        else:
+            branch["result"] = bool(branch.get("result", False))
+
+    overall_result = all(bool(branch.get("result", False)) for branch in validation_tree)
+    return validation_tree, overall_result
+
+
+def build_validation_hierarchy(claim_id, validation_tree):
+    """Create nested, box-friendly validation tree for UI rendering."""
+
+    def leaf_node(leaf):
+        return {
+            "kind": "leaf",
+            "label": leaf.get("check", "Leaf check"),
+            "fact": leaf.get("fact", ""),
+            "reason": leaf.get("reason", ""),
+            "result": bool(leaf.get("result", False)),
+            "children": []
+        }
+
+    def sub_sub_node(sub_sub):
+        leaves = [leaf_node(leaf) for leaf in (sub_sub.get("leaf_checks") or [])]
+        node_result = bool(sub_sub.get("result", False)) if leaves else bool(sub_sub.get("result", False))
+        if leaves:
+            node_result = all(child["result"] for child in leaves)
+        return {
+            "kind": "sub_sub_check",
+            "label": sub_sub.get("label", "Nested check"),
+            "result": node_result,
+            "children": leaves
+        }
+
+    def sub_node(sub):
+        sub_sub_checks = sub.get("sub_sub_checks") or []
+        leaves = sub.get("leaf_checks") or []
+
+        if sub_sub_checks:
+            children = [sub_sub_node(sub_sub) for sub_sub in sub_sub_checks]
+            node_result = all(child["result"] for child in children)
+        elif leaves:
+            children = [leaf_node(leaf) for leaf in leaves]
+            node_result = all(child["result"] for child in children)
+        else:
+            children = []
+            node_result = bool(sub.get("result", False))
+
+        return {
+            "kind": "sub_check",
+            "rule": sub.get("rule", "unknown_rule/1"),
+            "label": sub.get("label", "Sub-check"),
+            "result": node_result,
+            "children": children
+        }
+
+    branches = []
+    for branch in validation_tree:
+        children = [sub_node(sub) for sub in (branch.get("sub_checks") or [])]
+        branch_result = all(child["result"] for child in children) if children else bool(branch.get("result", False))
+        branches.append({
+            "kind": "branch",
+            "id": branch.get("id", "branch"),
+            "label": branch.get("label", "Branch"),
+            "icon": branch.get("icon", ""),
+            "result": branch_result,
+            "children": children
+        })
+
+    overall_result = all(branch["result"] for branch in branches)
+    return {
+        "kind": "root",
+        "label": f"valid_claim({claim_id})",
+        "result": overall_result,
+        "children": branches
+    }
+
+
 def build_output():
     output = {
         "contracts": [],
@@ -1881,8 +1753,33 @@ def build_output():
     for contract in CONTRACTS:
         cid = contract["id"]
         contract_claims = CLAIMS.get(cid, [])
-        valid_count   = sum(1 for c in contract_claims if c["expected"] == "VALID")
-        invalid_count = sum(1 for c in contract_claims if c["expected"] == "INVALID")
+        output["claims"][cid] = []
+        valid_count = 0
+        invalid_count = 0
+
+        for claim in contract_claims:
+            validation_tree = json.loads(json.dumps(claim["validation_tree"]))
+            validation_tree, propagated_result = propagate_validation_results(validation_tree)
+            validation_hierarchy = build_validation_hierarchy(claim["id"], validation_tree)
+            expected_status = "VALID" if propagated_result else "INVALID"
+
+            if expected_status == "VALID":
+                valid_count += 1
+            else:
+                invalid_count += 1
+
+            output["claims"][cid].append({
+                "id":             claim["id"],
+                "claimant":       claim["claimant"],
+                "date":           claim["date"],
+                "incident_date":  claim["incident_date"],
+                "description":    claim["description"],
+                "amount":         claim["amount"],
+                "expected":       expected_status,
+                "facts_prolog":   claim["facts_prolog"],
+                "validation_tree": validation_tree,
+                "validation_hierarchy": validation_hierarchy,
+            })
 
         output["contracts"].append({
             # ── Identity & display ──────────────────────
@@ -1908,20 +1805,6 @@ def build_output():
             "insurle_rules":      INSURLE_RULES[cid],
             "flowchart_nodes":    FLOWCHART_NODES[cid],
         })
-
-        output["claims"][cid] = []
-        for claim in contract_claims:
-            output["claims"][cid].append({
-                "id":             claim["id"],
-                "claimant":       claim["claimant"],
-                "date":           claim["date"],
-                "incident_date":  claim["incident_date"],
-                "description":    claim["description"],
-                "amount":         claim["amount"],
-                "expected":       claim["expected"],
-                "facts_prolog":   claim["facts_prolog"],
-                "validation_tree": claim["validation_tree"],
-            })
 
     return output
 

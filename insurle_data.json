@@ -59,7 +59,7 @@
           "text": "Any deliberate misrepresentation, concealment of material fact, or attempted fraud in connection with any claim will result in immediate policy cancellation, denial of all pending claims, and referral to the Special Investigations Unit for potential civil and criminal action."
         }
       ],
-      "insurle_rules": "%% AutoGuard Vehicle Insurance — InsurLE Contract Rules\n%% Policy: AG-VH-2024-001  ·  4-Level Nested Predicate Hierarchy\n\n%% ════ LEVEL 1: Top-level validity ════\nvalid_claim(C) :-\n    driver_fully_eligible(C),        %% L1→L2\n    vehicle_authorization_valid(C),  %% L1→L2\n    incident_circumstances_covered(C),%% L1→L2\n    claim_procedure_followed(C).     %% L1→L2\n\n%% ════ LEVEL 2: Driver Eligibility ════\ndriver_fully_eligible(C) :-\n    age_eligible(C),             %% L2→L3\n    license_compliant(C),        %% L2→L3\n    driving_history_acceptable(C). %% L2→L3\n\n%% ════ LEVEL 3: Age & Experience ════\nage_eligible(C) :-\n    age(C, A), A >= 21,                       %% L3→L4\n    driving_experience_months(C, E), E >= 12, %% L3→L4\n    age_class_verified(C, A, E).              %% L3→L4\n\n%% ════ LEVEL 4: Age class sub-rules ════\nage_class_verified(C, A, E) :-\n    A >= 25, E >= 24.  %% Standard driver\nage_class_verified(C, A, E) :-\n    A >= 21, A < 25, E >= 12,\n    novice_endorsement(C, true). %% Young driver\n\n%% ════ LEVEL 3: License Compliance ════\nlicense_compliant(C) :-\n    license_valid(C, true),\n    license_expired(C, false),\n    license_jurisdiction(C, Jur),\n    recognized_jurisdiction(Jur),        %% L3→L4\n    license_class_valid(C).              %% L3→L4\n\n%% ════ LEVEL 4: Jurisdiction & class ════\nrecognized_jurisdiction(us_state).\nrecognized_jurisdiction(canada_province).\nrecognized_jurisdiction(us_territory).\n\nlicense_class_valid(C) :-\n    license_class(C, Class),\n    member(Class, [class_a, class_b, class_c, class_d]).\n\n%% ════ LEVEL 3: Driving History ════\ndriving_history_acceptable(C) :-\n    dui_history(C, N),\n    fault_accidents_36mo(C, F),\n    history_within_limits(C, N, F).     %% L3→L4\n\n%% ════ LEVEL 4: History threshold logic ════\nhistory_within_limits(_, 0, F) :- F =< 2.\nhistory_within_limits(C, N, _) :-\n    N > 0,\n    months_since_last_dui(C, M), M >= 60,\n    high_risk_surcharge_paid(C, true),\n    defensive_course_completed(C, true).\n\n%% ════ LEVEL 2: Vehicle Authorization ════\nvehicle_authorization_valid(C) :-\n    ownership_established(C),     %% L2→L3\n    vehicle_type_covered(C),      %% L2→L3\n    registration_current(C).      %% L2→L3\n\n%% ════ LEVEL 3: Ownership ════\nownership_established(C) :-\n    vehicle_ownership(C, own),\n    title_on_file(C, true).        %% L3→L4\nownership_established(C) :-\n    vehicle_ownership(C, permitted),\n    permission_chain_valid(C).     %% L3→L4\n\n%% ════ LEVEL 4: Permission chain ════\npermission_chain_valid(C) :-\n    written_permission(C, true),\n    permission_notarized(C, true),\n    owner_signature_verified(C, true).\n\n%% ════ LEVEL 3: Vehicle Type ════\nvehicle_type_covered(C) :-\n    vehicle_class(C, passenger),\n    vehicle_weight_kg(C, W), W =< 3500,\n    not_race_modified(C).          %% L3→L4\n\n%% ════ LEVEL 4: Race modification check ════\nnot_race_modified(C) :-\n    race_modification_flag(C, false).\nnot_race_modified(C) :-\n    race_modification_flag(C, true),\n    sport_rider_attached(C, true).\n\n%% ════ LEVEL 2: Incident Circumstances ════\nincident_circumstances_covered(C) :-\n    sobriety_confirmed(C),        %% L2→L3\n    geographic_scope_met(C),      %% L2→L3\n    activity_not_excluded(C).     %% L2→L3\n\n%% ════ LEVEL 3: Sobriety ════\nsobriety_confirmed(C) :-\n    bac_within_limit(C),          %% L3→L4\n    narcotics_absent(C).          %% L3→L4\n\n%% ════ LEVEL 4: BAC & narcotics ════\nbac_within_limit(C) :-\n    bac(C, B), B =< 0.08.\nnarcotics_absent(C) :-\n    under_influence_narcotics(C, false).\n\n%% ════ LEVEL 3: Geographic Scope ════\ngeographic_scope_met(C) :-\n    incident_location(C, Loc),\n    location_covered(C, Loc).     %% L3→L4\n\n%% ════ LEVEL 4: Location rules ════\nlocation_covered(_, continental_us).\nlocation_covered(C, hawaii) :-\n    pacific_extension_rider(C, true).\nlocation_covered(C, alaska) :-\n    pacific_extension_rider(C, true).\n\n%% ════ LEVEL 3: Activity ════\nactivity_not_excluded(C) :-\n    activity(C, A),\n    activity_risk_class(A, Class), %% L3→L4\n    class_permitted(C, Class).\n\n%% ════ LEVEL 4: Risk class rules ════\nactivity_risk_class(normal_driving, standard).\nactivity_risk_class(highway_driving, standard).\nactivity_risk_class(racing, prohibited).\nactivity_risk_class(deliberate_damage, prohibited).\nactivity_risk_class(illegal_transport, prohibited).\n\nclass_permitted(_, standard).\n\n%% ════ LEVEL 2: Claim Procedure ════\nclaim_procedure_followed(C) :-\n    reported_in_time(C),           %% L2→L3\n    evidence_complete(C),          %% L2→L3\n    fraud_cleared(C).              %% L2→L3\n\n%% ════ LEVEL 3: Reporting ════\nreported_in_time(C) :-\n    days_since_incident(C, D),\n    reporting_deadline_met(C, D). %% L3→L4\n\n%% ════ LEVEL 4: Deadline threshold ════\nreporting_deadline_met(_, D) :- D =< 30.\n\n%% ════ LEVEL 3: Evidence ════\nevidence_complete(C) :-\n    police_report_status(C).      %% L3→L4\n\n%% ════ LEVEL 4: Police report conditions ════\npolice_report_status(C) :-\n    police_report(C, true).\npolice_report_status(C) :-\n    incident_value(C, V), V < 1000,\n    police_report(C, not_required).\n\n%% ════ LEVEL 3: Fraud screening ════\nfraud_cleared(C) :-\n    fraud_indicator(C, false),    %% L3→L4\n    siu_clearance(C).             %% L3→L4\n\n%% ════ LEVEL 4: SIU clearance ════\nsiu_clearance(C) :-\n    siu_flag(C, none).\nsiu_clearance(C) :-\n    siu_flag(C, reviewed),\n    siu_result(C, cleared).",
+      "insurle_rules": "%% AutoGuard Vehicle Insurance — InsurLE Contract Rules\n%% Policy: AG-VH-2024-001  ·  4-Level Nested Predicate Hierarchy\n\nvalid_claim(C) :-\n    driver_fully_eligible(C) :-\n        age_eligible(C) :-\n            age(C, A), A >= 21,\n            driving_experience_months(C, E), E >= 12,\n            age_class_verified(C, A, E) :-\n                A >= 25, E >= 24.  %% Standard driver\n            age_class_verified(C, A, E) :-\n                A >= 21, A < 25, E >= 12,\n                novice_endorsement(C, true). %% Young driver\n\n        license_compliant(C) :-\n            license_valid(C, true),\n            license_expired(C, false),\n            license_jurisdiction(C, Jur),\n            recognized_jurisdiction(Jur) :-\n                recognized_jurisdiction(us_state).\n                recognized_jurisdiction(canada_province).\n                recognized_jurisdiction(us_territory).\n            license_class_valid(C) :-\n                license_class(C, Class),\n                member(Class, [class_a, class_b, class_c, class_d]).\n\n        driving_history_acceptable(C) :-\n            dui_history(C, N),\n            fault_accidents_36mo(C, F),\n            history_within_limits(C, N, F) :-\n                history_within_limits(_, 0, F) :- F =< 2.\n                history_within_limits(C, N, _) :-\n                    N > 0,\n                    months_since_last_dui(C, M), M >= 60,\n                    high_risk_surcharge_paid(C, true),\n                    defensive_course_completed(C, true).\n\n    vehicle_authorization_valid(C) :-\n        ownership_established(C) :-\n            vehicle_ownership(C, own),\n            title_on_file(C, true).\n        ownership_established(C) :-\n            vehicle_ownership(C, permitted),\n            permission_chain_valid(C) :-\n                written_permission(C, true),\n                permission_notarized(C, true),\n                owner_signature_verified(C, true).\n\n        vehicle_type_covered(C) :-\n            vehicle_class(C, passenger),\n            vehicle_weight_kg(C, W), W =< 3500,\n            not_race_modified(C) :-\n                race_modification_flag(C, false).\n            not_race_modified(C) :-\n                race_modification_flag(C, true),\n                sport_rider_attached(C, true).\n\n        registration_current(C).\n\n    incident_circumstances_covered(C) :-\n        sobriety_confirmed(C) :-\n            bac_within_limit(C) :-\n                bac(C, B), B =< 0.08.\n            narcotics_absent(C) :-\n                under_influence_narcotics(C, false).\n\n        geographic_scope_met(C) :-\n            incident_location(C, Loc),\n            location_covered(C, Loc) :-\n                location_covered(_, continental_us).\n                location_covered(C, hawaii) :-\n                    pacific_extension_rider(C, true).\n                location_covered(C, alaska) :-\n                    pacific_extension_rider(C, true).\n\n        activity_not_excluded(C) :-\n            activity(C, A),\n            activity_risk_class(A, Class) :-\n                activity_risk_class(normal_driving, standard).\n                activity_risk_class(highway_driving, standard).\n                activity_risk_class(racing, prohibited).\n                activity_risk_class(deliberate_damage, prohibited).\n                activity_risk_class(illegal_transport, prohibited).\n            class_permitted(C, Class) :-\n                class_permitted(_, standard).\n\n    claim_procedure_followed(C) :-\n        reported_in_time(C) :-\n            days_since_incident(C, D),\n            reporting_deadline_met(C, D) :-\n                reporting_deadline_met(_, D) :- D =< 30.\n\n        evidence_complete(C) :-\n            police_report_status(C) :-\n                police_report(C, true).\n            police_report_status(C) :-\n                incident_value(C, V), V < 1000,\n                police_report(C, not_required).\n\n        fraud_cleared(C) :-\n            fraud_indicator(C, false),\n            siu_clearance(C) :-\n                siu_flag(C, none).\n            siu_clearance(C) :-\n                siu_flag(C, reviewed),\n                siu_result(C, cleared).",
       "flowchart_nodes": [
         {
           "main": [
@@ -244,7 +244,7 @@
           "text": "All claims must be submitted within 180 calendar days of the date of service. Claims submitted after this deadline are denied regardless of medical validity. Electronic portal submissions are accepted as timely if submitted by 11:59 PM on the 180th day."
         }
       ],
-      "insurle_rules": "%% VitalCare Health Insurance — InsurLE Contract Rules\n%% Policy: VC-HLT-2024-087  ·  4-Level Nested Predicate Hierarchy\n\n%% ════ LEVEL 1: Top-level validity ════\nvalid_claim(C) :-\n    enrollment_requirements_met(C),   %% L1→L2\n    coverage_applicable(C),           %% L1→L2\n    financial_limits_satisfied(C),    %% L1→L2\n    timely_submission(C).             %% L1→L2\n\n%% ════ LEVEL 2: Enrollment Requirements ════\nenrollment_requirements_met(C) :-\n    continuous_enrollment_satisfied(C),  %% L2→L3\n    pre_existing_waiting_satisfied(C),   %% L2→L3\n    premium_lapse_reviewed(C).           %% L2→L3\n\n%% ════ LEVEL 3: Enrollment checks ════\ncontinuous_enrollment_satisfied(C) :-\n    is_emergency(C, true).              %% L3→L4\ncontinuous_enrollment_satisfied(C) :-\n    days_enrolled(C, D), D >= 90,       %% L3→L4\n    enrollment_lapse(C, false),\n    enrollment_continuous_verified(C).  %% L3→L4\n\n%% ════ LEVEL 4: Enrollment verification ════\nenrollment_continuous_verified(C) :-\n    payment_gaps(C, G), G =< 0.\nenrollment_continuous_verified(C) :-\n    payment_gaps(C, G), G > 0, G =< 15,\n    late_payment_waiver(C, true).\n\n%% ════ LEVEL 3: Pre-existing condition wait ════\npre_existing_waiting_satisfied(C) :-\n    pre_existing_condition(C, false).   %% L3→L4\npre_existing_waiting_satisfied(C) :-\n    is_emergency(C, true).\npre_existing_waiting_satisfied(C) :-\n    pre_existing_condition(C, true),\n    condition_type(C, standard),\n    months_since_enrollment(C, M), M >= 12,\n    clinical_stability_confirmed(C).   %% L3→L4\npre_existing_waiting_satisfied(C) :-\n    pre_existing_condition(C, true),\n    condition_type(C, genetic),\n    months_since_enrollment(C, M), M >= 24,\n    genetic_counselor_review(C, true). %% L3→L4\n\n%% ════ LEVEL 4: Stability & review checks ════\nclinical_stability_confirmed(C) :-\n    condition_stable_months(C, S), S >= 6.\ngenetic_counselor_review(C, true) :-\n    counselor_assessment(C, approved).\n\n%% ════ LEVEL 3: Lapse review ════\npremium_lapse_reviewed(C) :-\n    enrollment_lapse(C, false).        %% L3→L4\npremium_lapse_reviewed(C) :-\n    enrollment_lapse(C, true),\n    lapse_days(C, LD), LD =< 15,\n    reinstatement_approved(C).\n\n%% ════ LEVEL 2: Coverage Applicable ════\ncoverage_applicable(C) :-\n    provider_network_compliant(C),           %% L2→L3\n    authorization_obtained_if_needed(C),     %% L2→L3\n    not_cosmetic_only(C).                    %% L2→L3\n\n%% ════ LEVEL 3: Network compliance ════\nprovider_network_compliant(C) :-\n    is_emergency(C, true).\nprovider_network_compliant(C) :-\n    provider_network(C, in_network),\n    provider_credentialed(C).           %% L3→L4\nprovider_network_compliant(C) :-\n    provider_network(C, out_of_network),\n    out_of_network_exception(C).       %% L3→L4\n\n%% ════ LEVEL 4: Provider credentialing ════\nprovider_credentialed(C) :-\n    provider_license(C, valid),\n    board_certification(C, true).\nout_of_network_exception(C) :-\n    no_in_network_available(C, true),\n    referral_authorised(C, true).\n\n%% ════ LEVEL 3: Authorization ════\nauthorization_obtained_if_needed(C) :-\n    is_emergency(C, true).\nauthorization_obtained_if_needed(C) :-\n    claim_amount(C, A), A =< 5000,\n    procedure_class(C, routine).       %% L3→L4\nauthorization_obtained_if_needed(C) :-\n    claim_amount(C, A), A > 5000,\n    prior_authorization(C, true),\n    mrb_review_completed(C).           %% L3→L4\n\n%% ════ LEVEL 4: MRB and procedure class ════\nprocedure_class(C, routine) :-\n    procedure_type(C, T),\n    member(T, [diagnostic, screening, preventive, minor_surgery]).\nmrb_review_completed(C) :-\n    mrb_decision(C, approved),\n    review_days_advance(C, D), D >= 10.\n\n%% ════ LEVEL 3: Cosmetic check ════\nnot_cosmetic_only(C) :-\n    cosmetic_only(C, false).\nnot_cosmetic_only(C) :-\n    cosmetic_only(C, true),\n    medical_necessity(C, true),\n    prior_authorization(C, true),\n    reconstructive_qualification(C).   %% L3→L4\n\n%% ════ LEVEL 4: Reconstructive qualification ════\nreconstructive_qualification(C) :-\n    trauma_documented(C, true),\n    reconstructive_type(C, T),\n    member(T, [post_mastectomy, burn_repair, accident_reconstruction]).\n\n%% ════ LEVEL 2: Financial Limits ════\nfinancial_limits_satisfied(C) :-\n    deductible_status_ok(C),          %% L2→L3\n    within_lifetime_max(C),           %% L2→L3\n    annual_out_of_pocket_ok(C).       %% L2→L3\n\n%% ════ LEVEL 3: Deductible ════\ndeductible_status_ok(C) :-\n    is_emergency(C, true).\ndeductible_status_ok(C) :-\n    annual_deductible_met(C, true),\n    deductible_year_match(C).          %% L3→L4\n\n%% ════ LEVEL 4: Deductible year alignment ════\ndeductible_year_match(C) :-\n    policy_year(C, Y),\n    service_year(C, Y).\n\n%% ════ LEVEL 3: Lifetime max ════\nwithin_lifetime_max(C) :-\n    cumulative_claims(C, Total),\n    lifetime_headroom(C, Total, H),    %% L3→L4\n    H > 0.\n\n%% ════ LEVEL 4: Headroom calculation ════\nlifetime_headroom(_, Total, H) :-\n    H is 500000 - Total.\n\n%% ════ LEVEL 3: Annual out-of-pocket ════\nannual_out_of_pocket_ok(C) :-\n    annual_oop(C, OOP), OOP =< 8000.\n\n%% ════ LEVEL 2: Timely Submission ════\ntimely_submission(C) :-\n    days_since_service(C, D),\n    submission_within_window(C, D).   %% L2→L3\n\n%% ════ LEVEL 3: Window check ════\nsubmission_within_window(C, D) :-\n    D =< 180,\n    submission_channel_valid(C).       %% L3→L4\n\n%% ════ LEVEL 4: Submission channel ════\nsubmission_channel_valid(C) :-\n    submission_method(C, M),\n    member(M, [portal, mail, fax, in_person]).",
+      "insurle_rules": "%% VitalCare Health Insurance — InsurLE Contract Rules\n%% Policy: VC-HLT-2024-087  ·  4-Level Nested Predicate Hierarchy\n\nvalid_claim(C) :-\n    enrollment_requirements_met(C) :-\n        continuous_enrollment_satisfied(C) :-\n            continuous_enrollment_satisfied(C) :-\n                is_emergency(C, true).\n            continuous_enrollment_satisfied(C) :-\n                days_enrolled(C, D), D >= 90,\n                enrollment_lapse(C, false),\n                enrollment_continuous_verified(C) :-\n                    enrollment_continuous_verified(C) :-\n                        payment_gaps(C, G), G =< 0.\n                    enrollment_continuous_verified(C) :-\n                        payment_gaps(C, G), G > 0, G =< 15,\n                        late_payment_waiver(C, true).\n\n        pre_existing_waiting_satisfied(C) :-\n            pre_existing_waiting_satisfied(C) :-\n                pre_existing_condition(C, false).\n            pre_existing_waiting_satisfied(C) :-\n                is_emergency(C, true).\n            pre_existing_waiting_satisfied(C) :-\n                pre_existing_condition(C, true),\n                condition_type(C, standard),\n                months_since_enrollment(C, M), M >= 12,\n                clinical_stability_confirmed(C) :-\n                    condition_stable_months(C, S), S >= 6.\n            pre_existing_waiting_satisfied(C) :-\n                pre_existing_condition(C, true),\n                condition_type(C, genetic),\n                months_since_enrollment(C, M), M >= 24,\n                genetic_counselor_review(C, true) :-\n                    counselor_assessment(C, approved).\n\n        premium_lapse_reviewed(C) :-\n            premium_lapse_reviewed(C) :-\n                enrollment_lapse(C, false).\n            premium_lapse_reviewed(C) :-\n                enrollment_lapse(C, true),\n                lapse_days(C, LD), LD =< 15,\n                reinstatement_approved(C).\n\n    coverage_applicable(C) :-\n        provider_network_compliant(C) :-\n            provider_network_compliant(C) :-\n                is_emergency(C, true).\n            provider_network_compliant(C) :-\n                provider_network(C, in_network),\n                provider_credentialed(C) :-\n                    provider_license(C, valid),\n                    board_certification(C, true).\n            provider_network_compliant(C) :-\n                provider_network(C, out_of_network),\n                out_of_network_exception(C) :-\n                    no_in_network_available(C, true),\n                    referral_authorised(C, true).\n\n        authorization_obtained_if_needed(C) :-\n            authorization_obtained_if_needed(C) :-\n                is_emergency(C, true).\n            authorization_obtained_if_needed(C) :-\n                claim_amount(C, A), A =< 5000,\n                procedure_class(C, routine) :-\n                    procedure_type(C, T),\n                    member(T, [diagnostic, screening, preventive, minor_surgery]).\n            authorization_obtained_if_needed(C) :-\n                claim_amount(C, A), A > 5000,\n                prior_authorization(C, true),\n                mrb_review_completed(C) :-\n                    mrb_decision(C, approved),\n                    review_days_advance(C, D), D >= 10.\n\n        not_cosmetic_only(C) :-\n            not_cosmetic_only(C) :-\n                cosmetic_only(C, false).\n            not_cosmetic_only(C) :-\n                cosmetic_only(C, true),\n                medical_necessity(C, true),\n                prior_authorization(C, true),\n                reconstructive_qualification(C) :-\n                    trauma_documented(C, true),\n                    reconstructive_type(C, T),\n                    member(T, [post_mastectomy, burn_repair, accident_reconstruction]).\n\n    financial_limits_satisfied(C) :-\n        deductible_status_ok(C) :-\n            deductible_status_ok(C) :-\n                is_emergency(C, true).\n            deductible_status_ok(C) :-\n                annual_deductible_met(C, true),\n                deductible_year_match(C) :-\n                    policy_year(C, Y),\n                    service_year(C, Y).\n\n        within_lifetime_max(C) :-\n            cumulative_claims(C, Total),\n            lifetime_headroom(C, Total, H) :-\n                lifetime_headroom(_, Total, H) :-\n                    H is 500000 - Total.\n            H > 0.\n\n        annual_out_of_pocket_ok(C) :-\n            annual_oop(C, OOP), OOP =< 8000.\n\n    timely_submission(C) :-\n        days_since_service(C, D),\n        submission_within_window(C, D) :-\n            D =< 180,\n            submission_channel_valid(C) :-\n                submission_method(C, M),\n                member(M, [portal, mail, fax, in_person]).",
       "flowchart_nodes": [
         {
           "main": [
@@ -425,7 +425,7 @@
           "text": "Claims arising from incidents where the insured was under the influence of alcohol (BAC > 0.08) or unprescribed substances are excluded without exception. Claims arising from war, terrorism, civil insurrection, military action, or nuclear incidents are also excluded."
         }
       ],
-      "insurle_rules": "%% JetSafe Travel Insurance — InsurLE Contract Rules\n%% Policy: JS-TRV-2024-445  ·  4-Level Nested Predicate Hierarchy\n\n%% ════ LEVEL 1: Top-level validity ════\nvalid_claim(C) :-\n    policy_validity_confirmed(C),       %% L1→L2\n    covered_event_occurred(C),          %% L1→L2\n    risk_profile_eligible(C),           %% L1→L2\n    documentation_complete(C).          %% L1→L2\n\n%% ════ LEVEL 2: Policy Validity ════\npolicy_validity_confirmed(C) :-\n    purchased_within_window(C),         %% L2→L3\n    trip_not_already_commenced(C),      %% L2→L3\n    policy_status_active(C).            %% L2→L3\n\n%% ════ LEVEL 3: Purchase window ════\npurchased_within_window(C) :-\n    days_after_deposit(C, D), D =< 21,\n    purchase_channel_valid(C).          %% L3→L4\npurchased_within_window(C) :-\n    claim_type(C, T),\n    \\+ member(T, [trip_cancellation]),\n    non_cancellation_policy_valid(C).   %% L3→L4\n\n%% ════ LEVEL 4: Purchase & policy channel ════\npurchase_channel_valid(C) :-\n    purchase_method(C, M),\n    member(M, [online, agent, broker, direct]).\nnon_cancellation_policy_valid(C) :-\n    policy_active_since(C, D), D >= 0.\n\n%% ════ LEVEL 3: Trip status ════\ntrip_not_already_commenced(C) :-\n    trip_commenced_at_purchase(C, false),\n    departure_date_check(C).            %% L3→L4\n\n%% ════ LEVEL 4: Departure date verification ════\ndeparture_date_check(C) :-\n    purchase_before_departure(C, true).\n\n%% ════ LEVEL 3: Policy active status ════\npolicy_status_active(C) :-\n    policy_lapse(C, false),\n    premium_paid(C, true),\n    coverage_period_current(C).         %% L3→L4\n\n%% ════ LEVEL 4: Coverage period ════\ncoverage_period_current(C) :-\n    incident_within_trip_dates(C, true).\n\n%% ════ LEVEL 2: Covered Event ════\ncovered_event_occurred(C) :-\n    claim_type(C, trip_cancellation),\n    valid_cancellation_reason(C).       %% L2→L3\ncovered_event_occurred(C) :-\n    claim_type(C, medical),\n    medical_event_covered(C).           %% L2→L3\ncovered_event_occurred(C) :-\n    claim_type(C, baggage),\n    baggage_loss_documented(C).         %% L2→L3\n\n%% ════ LEVEL 3: Cancellation reason ════\nvalid_cancellation_reason(C) :-\n    cancellation_reason(C, R),\n    covered_reason_class(R, Class),     %% L3→L4\n    class_authorised(Class).\n\n%% ════ LEVEL 4: Reason classification ════\ncovered_reason_class(illness, medical_class).\ncovered_reason_class(injury, medical_class).\ncovered_reason_class(death, bereavement_class).\ncovered_reason_class(natural_disaster, force_majeure).\ncovered_reason_class(airline_bankruptcy, carrier_failure).\ncovered_reason_class(job_loss, employment_class).\ncovered_reason_class(mandatory_evacuation, government_class).\n\nclass_authorised(medical_class).\nclass_authorised(bereavement_class).\nclass_authorised(force_majeure).\nclass_authorised(carrier_failure).\nclass_authorised(employment_class).\nclass_authorised(government_class).\n\n%% ════ LEVEL 3: Medical event ════\nmedical_event_covered(C) :-\n    medical_emergency(C, true),\n    medical_facility_attended(C).       %% L3→L4\nmedical_event_covered(C) :-\n    medical_emergency(C, false),\n    treatment_required(C, true),\n    pre_existing_condition(C, false),\n    treating_physician_qualified(C).    %% L3→L4\n\n%% ════ LEVEL 4: Facility & physician checks ════\nmedical_facility_attended(C) :-\n    facility_type(C, T),\n    member(T, [hospital, clinic, emergency_room, ambulance]).\ntreating_physician_qualified(C) :-\n    physician_license(C, valid).\n\n%% ════ LEVEL 3: Baggage documentation ════\nbaggage_loss_documented(C) :-\n    police_report_filed(C, true),\n    hours_to_report(C, H), H =< 24,\n    baggage_value_within_limit(C).      %% L3→L4\n\n%% ════ LEVEL 4: Baggage value cap ════\nbaggage_value_within_limit(C) :-\n    baggage_claimed_amount(C, B), B =< 2500.\nbaggage_value_within_limit(C) :-\n    baggage_claimed_amount(C, B), B > 2500,\n    high_value_rider(C, true).\n\n%% ════ LEVEL 2: Risk Profile ════\nrisk_profile_eligible(C) :-\n    fit_at_purchase(C, true).\nmedically_fit_at_purchase(C) :-\n    fit_at_purchase(C, false),\n    pre_existing_waiver(C, true),\n    condition_stable_60_days(C, true).\n\ndestination_covered(C) :-\n    destination_advisory_level(C, L), L < 4.\n\nactivity_covered(C) :-\n    activity(C, A), \\+ extreme_sport(A).\nactivity_covered(C) :-\n    activity(C, A), extreme_sport(A),\n    adventure_rider(C, true).\n\nextreme_sport(base_jumping). extreme_sport(skydiving).\nextreme_sport(free_solo_climbing). extreme_sport(cliff_diving).\n\n%% ── Level 2: Documentation & Exclusions ──────\ndocumentation_complete(C) :-\n    timely_notification(C),\n    documents_provided(C),\n    exclusions_clear(C).\n\ntimely_notification(C) :- claim_type(C, baggage), hours_to_report(C, H), H =< 24.\ntimely_notification(C) :- claim_type(C, T), T \\= baggage.\n\ndocuments_provided(C) :- documentation_provided(C, true).\n\nexclusions_clear(C) :-\n    under_influence(C, false),\n    war_related(C, false).",
+      "insurle_rules": "%% JetSafe Travel Insurance — InsurLE Contract Rules\n%% Policy: JS-TRV-2024-445  ·  4-Level Nested Predicate Hierarchy\n\nvalid_claim(C) :-\n    policy_validity_confirmed(C) :-\n        purchased_within_window(C) :-\n            purchased_within_window(C) :-\n                days_after_deposit(C, D), D =< 21,\n                purchase_channel_valid(C) :-\n                    purchase_method(C, M),\n                    member(M, [online, agent, broker, direct]).\n            purchased_within_window(C) :-\n                claim_type(C, T),\n                \\+ member(T, [trip_cancellation]),\n                non_cancellation_policy_valid(C) :-\n                    policy_active_since(C, D), D >= 0.\n\n        trip_not_already_commenced(C) :-\n            trip_commenced_at_purchase(C, false),\n            departure_date_check(C) :-\n                purchase_before_departure(C, true).\n\n        policy_status_active(C) :-\n            policy_lapse(C, false),\n            premium_paid(C, true),\n            coverage_period_current(C) :-\n                incident_within_trip_dates(C, true).\n\n    covered_event_occurred(C) :-\n        covered_event_occurred(C) :-\n            claim_type(C, trip_cancellation),\n            valid_cancellation_reason(C) :-\n                cancellation_reason(C, R),\n                covered_reason_class(R, Class) :-\n                    covered_reason_class(illness, medical_class).\n                    covered_reason_class(injury, medical_class).\n                    covered_reason_class(death, bereavement_class).\n                    covered_reason_class(natural_disaster, force_majeure).\n                    covered_reason_class(airline_bankruptcy, carrier_failure).\n                    covered_reason_class(job_loss, employment_class).\n                    covered_reason_class(mandatory_evacuation, government_class).\n                class_authorised(Class) :-\n                    class_authorised(medical_class).\n                    class_authorised(bereavement_class).\n                    class_authorised(force_majeure).\n                    class_authorised(carrier_failure).\n                    class_authorised(employment_class).\n                    class_authorised(government_class).\n\n        covered_event_occurred(C) :-\n            claim_type(C, medical),\n            medical_event_covered(C) :-\n                medical_event_covered(C) :-\n                    medical_emergency(C, true),\n                    medical_facility_attended(C) :-\n                        facility_type(C, T),\n                        member(T, [hospital, clinic, emergency_room, ambulance]).\n                medical_event_covered(C) :-\n                    medical_emergency(C, false),\n                    treatment_required(C, true),\n                    pre_existing_condition(C, false),\n                    treating_physician_qualified(C) :-\n                        physician_license(C, valid).\n\n        covered_event_occurred(C) :-\n            claim_type(C, baggage),\n            baggage_loss_documented(C) :-\n                police_report_filed(C, true),\n                hours_to_report(C, H), H =< 24,\n                baggage_value_within_limit(C) :-\n                    baggage_value_within_limit(C) :-\n                        baggage_claimed_amount(C, B), B =< 2500.\n                    baggage_value_within_limit(C) :-\n                        baggage_claimed_amount(C, B), B > 2500,\n                        high_value_rider(C, true).\n\n    risk_profile_eligible(C) :-\n        fit_at_purchase(C, true).\n    medically_fit_at_purchase(C) :-\n        fit_at_purchase(C, false),\n        pre_existing_waiver(C, true),\n        condition_stable_60_days(C, true).\n\n    destination_covered(C) :-\n        destination_advisory_level(C, L), L < 4.\n\n    activity_covered(C) :-\n        activity_covered(C) :-\n            activity(C, A), \\+ extreme_sport(A).\n        activity_covered(C) :-\n            activity(C, A), extreme_sport(A) :-\n                extreme_sport(base_jumping). extreme_sport(skydiving).\n                extreme_sport(free_solo_climbing). extreme_sport(cliff_diving).\n            adventure_rider(C, true).\n\n    documentation_complete(C) :-\n        timely_notification(C) :-\n            timely_notification(C) :-\n                claim_type(C, baggage), hours_to_report(C, H), H =< 24.\n            timely_notification(C) :-\n                claim_type(C, T), T \\= baggage.\n        documents_provided(C) :-\n            documentation_provided(C, true).\n        exclusions_clear(C) :-\n            under_influence(C, false),\n            war_related(C, false).",
       "flowchart_nodes": [
         {
           "main": [
@@ -610,7 +610,7 @@
           "text": "All claims require a completed attending physician statement from a licensed medical practitioner. For disability claims, monthly ongoing physician statements are required throughout the disability period. Self-reported injuries without corroborating medical documentation are excluded from coverage entirely."
         }
       ],
-      "insurle_rules": "%% ShieldPlus Personal Accident — InsurLE Contract Rules\n%% Policy: SP-ACC-2024-209  ·  4-Level Nested Predicate Hierarchy\n\n%% ════ LEVEL 1: Top-level validity ════\nvalid_claim(C) :-\n    accidental_origin_confirmed(C),   %% L1→L2\n    claimant_fully_eligible(C),       %% L1→L2\n    medical_criteria_met(C),          %% L1→L2\n    procedure_compliant(C).           %% L1→L2\n\n%% ════ LEVEL 2: Accidental Origin ════\naccidental_origin_confirmed(C) :-\n    cause_is_accidental(C),           %% L2→L3\n    not_self_inflicted(C),            %% L2→L3\n    not_excluded_cause(C),            %% L2→L3\n    sole_cause_verified(C).           %% L2→L3\n\n%% ════ LEVEL 3: Accident classification ════\ncause_is_accidental(C) :-\n    accident_type(C, T),\n    accident_category(T, Cat),         %% L3→L4\n    category_covered(Cat).\n\n%% ════ LEVEL 4: Accident taxonomy ════\naccident_category(fall, physical_trauma).\naccident_category(collision, physical_trauma).\naccident_category(burn, physical_trauma).\naccident_category(drowning, environmental).\naccident_category(electrocution, environmental).\naccident_category(workplace_accident, occupational).\naccident_category(road_accident, vehicular).\naccident_category(sports_accident, recreational).\n\ncategory_covered(physical_trauma).\ncategory_covered(environmental).\ncategory_covered(occupational).\ncategory_covered(vehicular).\ncategory_covered(recreational).\n\n%% ════ LEVEL 3: Self-infliction check ════\nnot_self_inflicted(C) :-\n    self_inflicted(C, false),\n    psychological_assessment_required(C, false). %% L3→L4\nnot_self_inflicted(C) :-\n    self_inflicted(C, false),\n    psychological_assessment_required(C, true),\n    psych_assessment_clear(C).         %% L3→L4\n\n%% ════ LEVEL 4: Assessment clearance ════\npsych_assessment_clear(C) :-\n    psych_report(C, no_intent).\n\n%% ════ LEVEL 3: Cause exclusion list ════\nnot_excluded_cause(C) :-\n    cause(C, Cause),\n    cause_exclusion_class(Cause, Class), %% L3→L4\n    class_not_excluded(Class).\n\n%% ════ LEVEL 4: Exclusion taxonomy ════\ncause_exclusion_class(workplace_accident,  occupational_class).\ncause_exclusion_class(road_accident,       vehicular_class).\ncause_exclusion_class(fall,                accidental_class).\ncause_exclusion_class(sports_accident,     recreational_class).\ncause_exclusion_class(self_inflicted,      excluded_class).\ncause_exclusion_class(criminal_activity,   excluded_class).\ncause_exclusion_class(war,                 excluded_class).\ncause_exclusion_class(professional_sports, excluded_class).\n\nclass_not_excluded(occupational_class).\nclass_not_excluded(vehicular_class).\nclass_not_excluded(accidental_class).\nclass_not_excluded(recreational_class).\n\n%% ════ LEVEL 3: Sole cause check ════\nsole_cause_verified(C) :-\n    contributing_disease(C, false),    %% L3→L4\n    contributing_infirmity(C, false).\n\n%% ════ LEVEL 4: Contributing factor checks ════\ncontributing_disease(C, false) :-\n    comorbidity_flag(C, none).\ncontributing_infirmity(C, false) :-\n    pre_existing_infirmity(C, false).\n\n%% ════ LEVEL 2: Claimant Eligibility ════\nclaimant_fully_eligible(C) :-\n    age_in_range(C),                   %% L2→L3\n    intoxication_negative(C),          %% L2→L3\n    not_professional_sport(C),         %% L2→L3\n    occupation_eligible(C).            %% L2→L3\n\n%% ════ LEVEL 3: Age verification ════\nage_in_range(C) :-\n    age(C, A), A >= 18, A =< 70,\n    age_band_confirmed(C, A).          %% L3→L4\n\n%% ════ LEVEL 4: Age band sub-rules ════\nage_band_confirmed(_, A) :- A >= 18, A =< 65.  %% Standard band\nage_band_confirmed(C, A) :-\n    A > 65, A =< 70,\n    senior_extension_policy(C, true). %% Senior extension required\n\n%% ════ LEVEL 3: Intoxication check ════\nintoxication_negative(C) :-\n    intoxicated(C, false),\n    narcotics_influence(C, false),\n    toxicology_report_status(C).       %% L3→L4\n\n%% ════ LEVEL 4: Toxicology report ════\ntoxicology_report_status(C) :-\n    toxicology_required(C, false).\ntoxicology_report_status(C) :-\n    toxicology_required(C, true),\n    toxicology_result(C, negative).\n\n%% ════ LEVEL 3: Professional sport exclusion ════\nnot_professional_sport(C) :-\n    activity(C, A),\n    sport_payment_status(C, A, Status), %% L3→L4\n    Status \\= paid_athlete.\n\n%% ════ LEVEL 4: Payment status check ════\nsport_payment_status(C, A, paid_athlete) :-\n    receives_remuneration(C, true),\n    member(A, [rugby, football, cricket, basketball, baseball]).\nsport_payment_status(C, _, amateur) :-\n    receives_remuneration(C, false).\n\n%% ════ LEVEL 3: Occupation eligibility ════\noccupation_eligible(C) :-\n    occupation_class(C, Class),\n    hazardous_occupation_handled(C, Class). %% L3→L4\n\n%% ════ LEVEL 4: Hazardous occupation handling ════\nhazardous_occupation_handled(_, standard).\nhazardous_occupation_handled(C, hazardous) :-\n    hazardous_rider(C, true),\n    hazard_premium_paid(C, true).\n\n%% ════ LEVEL 2: Medical Criteria ════\nmedical_criteria_met(C) :-\n    medical_evidence_provided(C),     %% L2→L3\n    licensed_provider_confirms(C),    %% L2→L3\n    injury_consistent_with_claim(C).  %% L2→L3\n\n%% ════ LEVEL 3: Medical evidence ════\nmedical_evidence_provided(C) :-\n    medical_evidence(C, true),\n    evidence_currency(C, Days), Days =< 30. %% L3→L4\n\n%% ════ LEVEL 4: Evidence currency ════\nevidence_currency(C, Days) :-\n    evidence_date_delta(C, Days).\n\n%% ════ LEVEL 3: Provider licensing ════\nlicensed_provider_confirms(C) :-\n    attending_physician_licensed(C, true),\n    specialty_appropriate(C).          %% L3→L4\n\n%% ════ LEVEL 4: Specialty check ════\nspecialty_appropriate(C) :-\n    physician_specialty(C, S),\n    member(S, [general_practitioner, emergency_medicine, orthopaedics,\n               neurology, cardiology, surgery]).\n\n%% ════ LEVEL 3: Injury-claim alignment ════\ninjury_consistent_with_claim(C) :-\n    injury_severity(C, Sev),\n    claim_type(C, Type),\n    severity_claim_alignment(Sev, Type). %% L3→L4\n\n%% ════ LEVEL 4: Alignment matrix ════\nseverity_claim_alignment(minor,    disability) :- !.\nseverity_claim_alignment(moderate, disability).\nseverity_claim_alignment(severe,   disability).\nseverity_claim_alignment(severe,   accidental_death).\nseverity_claim_alignment(fatal,    accidental_death).\nseverity_claim_alignment(minor,    dismemberment) :- !.\nseverity_claim_alignment(moderate, dismemberment).\n\n%% ════ LEVEL 2: Procedure Compliance ════\nprocedure_compliant(C) :-\n    notification_in_time(C),           %% L2→L3\n    benefit_type_valid(C),             %% L2→L3\n    within_benefit_limits(C).          %% L2→L3\n\n%% ════ LEVEL 3: Notification deadline (OR gate) ════\nnotification_in_time(C) :-\n    claim_type(C, accidental_death),\n    days_to_notify(C, D), D =< 30.    %% L3→L4\nnotification_in_time(C) :-\n    claim_type(C, disability),\n    days_to_notify(C, D), D =< 14.    %% L3→L4\n\n%% ════ LEVEL 4: Deadline thresholds ════\n%% Death: 30 days, Disability: 14 days.\n\n%% ════ LEVEL 3: Benefit type validation ════\nbenefit_type_valid(C) :-\n    claim_type(C, T),\n    benefit_coverage_class(T, _).      %% L3→L4\n\n%% ════ LEVEL 4: Benefit coverage taxonomy ════\nbenefit_coverage_class(accidental_death, principal_benefit).\nbenefit_coverage_class(dismemberment,    principal_benefit).\nbenefit_coverage_class(disability,       periodic_benefit).\n\n%% ════ LEVEL 3: Benefit limit check ════\nwithin_benefit_limits(C) :-\n    claim_type(C, accidental_death),\n    claim_amount_usd(C, A), A =< 250000. %% L3→L4\nwithin_benefit_limits(C) :-\n    claim_type(C, disability),\n    claim_amount_usd(C, A), A =< 250000.",
+      "insurle_rules": "%% ShieldPlus Personal Accident — InsurLE Contract Rules\n%% Policy: SP-ACC-2024-209  ·  4-Level Nested Predicate Hierarchy\n\nvalid_claim(C) :-\n    accidental_origin_confirmed(C) :-\n        cause_is_accidental(C) :-\n            accident_type(C, T),\n            accident_category(T, Cat) :-\n                accident_category(fall, physical_trauma).\n                accident_category(collision, physical_trauma).\n                accident_category(burn, physical_trauma).\n                accident_category(drowning, environmental).\n                accident_category(electrocution, environmental).\n                accident_category(workplace_accident, occupational).\n                accident_category(road_accident, vehicular).\n                accident_category(sports_accident, recreational).\n            category_covered(Cat) :-\n                category_covered(physical_trauma).\n                category_covered(environmental).\n                category_covered(occupational).\n                category_covered(vehicular).\n                category_covered(recreational).\n\n        not_self_inflicted(C) :-\n            not_self_inflicted(C) :-\n                self_inflicted(C, false),\n                psychological_assessment_required(C, false).\n            not_self_inflicted(C) :-\n                self_inflicted(C, false),\n                psychological_assessment_required(C, true),\n                psych_assessment_clear(C) :-\n                    psych_report(C, no_intent).\n\n        not_excluded_cause(C) :-\n            cause(C, Cause),\n            cause_exclusion_class(Cause, Class) :-\n                cause_exclusion_class(workplace_accident,  occupational_class).\n                cause_exclusion_class(road_accident,       vehicular_class).\n                cause_exclusion_class(fall,                accidental_class).\n                cause_exclusion_class(sports_accident,     recreational_class).\n                cause_exclusion_class(self_inflicted,      excluded_class).\n                cause_exclusion_class(criminal_activity,   excluded_class).\n                cause_exclusion_class(war,                 excluded_class).\n                cause_exclusion_class(professional_sports, excluded_class).\n            class_not_excluded(Class) :-\n                class_not_excluded(occupational_class).\n                class_not_excluded(vehicular_class).\n                class_not_excluded(accidental_class).\n                class_not_excluded(recreational_class).\n\n        sole_cause_verified(C) :-\n            contributing_disease(C, false) :-\n                comorbidity_flag(C, none).\n            contributing_infirmity(C, false) :-\n                pre_existing_infirmity(C, false).\n\n    claimant_fully_eligible(C) :-\n        age_in_range(C) :-\n            age(C, A), A >= 18, A =< 70,\n            age_band_confirmed(C, A) :-\n                age_band_confirmed(_, A) :- A >= 18, A =< 65.\n                age_band_confirmed(C, A) :-\n                    A > 65, A =< 70,\n                    senior_extension_policy(C, true).\n\n        intoxication_negative(C) :-\n            intoxicated(C, false),\n            narcotics_influence(C, false),\n            toxicology_report_status(C) :-\n                toxicology_report_status(C) :-\n                    toxicology_required(C, false).\n                toxicology_report_status(C) :-\n                    toxicology_required(C, true),\n                    toxicology_result(C, negative).\n\n        not_professional_sport(C) :-\n            activity(C, A),\n            sport_payment_status(C, A, Status) :-\n                sport_payment_status(C, A, paid_athlete) :-\n                    receives_remuneration(C, true),\n                    member(A, [rugby, football, cricket, basketball, baseball]).\n                sport_payment_status(C, _, amateur) :-\n                    receives_remuneration(C, false).\n            Status \\= paid_athlete.\n\n        occupation_eligible(C) :-\n            occupation_class(C, Class),\n            hazardous_occupation_handled(C, Class) :-\n                hazardous_occupation_handled(_, standard).\n                hazardous_occupation_handled(C, hazardous) :-\n                    hazardous_rider(C, true),\n                    hazard_premium_paid(C, true).\n\n    medical_criteria_met(C) :-\n        medical_evidence_provided(C) :-\n            medical_evidence(C, true),\n            evidence_currency(C, Days) :-\n                evidence_date_delta(C, Days).\n            Days =< 30.\n\n        licensed_provider_confirms(C) :-\n            attending_physician_licensed(C, true),\n            specialty_appropriate(C) :-\n                physician_specialty(C, S),\n                member(S, [general_practitioner, emergency_medicine, orthopaedics, neurology, cardiology, surgery]).\n\n        injury_consistent_with_claim(C) :-\n            injury_severity(C, Sev),\n            claim_type(C, Type),\n            severity_claim_alignment(Sev, Type) :-\n                severity_claim_alignment(minor,    disability) :- !.\n                severity_claim_alignment(moderate, disability).\n                severity_claim_alignment(severe,   disability).\n                severity_claim_alignment(severe,   accidental_death).\n                severity_claim_alignment(fatal,    accidental_death).\n                severity_claim_alignment(minor,    dismemberment) :- !.\n                severity_claim_alignment(moderate, dismemberment).\n\n    procedure_compliant(C) :-\n        notification_in_time(C) :-\n            notification_in_time(C) :-\n                claim_type(C, accidental_death),\n                days_to_notify(C, D), D =< 30.\n            notification_in_time(C) :-\n                claim_type(C, disability),\n                days_to_notify(C, D), D =< 14.\n\n        benefit_type_valid(C) :-\n            claim_type(C, T),\n            benefit_coverage_class(T, _) :-\n                benefit_coverage_class(accidental_death, principal_benefit).\n                benefit_coverage_class(dismemberment,    principal_benefit).\n                benefit_coverage_class(disability,       periodic_benefit).\n\n        within_benefit_limits(C) :-\n            within_benefit_limits(C) :-\n                claim_type(C, accidental_death),\n                claim_amount_usd(C, A), A =< 250000.\n            within_benefit_limits(C) :-\n                claim_type(C, disability),\n                claim_amount_usd(C, A), A =< 250000.",
       "flowchart_nodes": [
         {
           "main": [
@@ -1013,7 +1013,7 @@
                 ]
               },
               {
-                "rule": "police_report_filed/1",
+                "rule": "evidence_complete/1",
                 "label": "Police Report Verification",
                 "result": true,
                 "sub_sub_checks": [
@@ -1032,7 +1032,7 @@
                 ]
               },
               {
-                "rule": "no_fraud/1",
+                "rule": "fraud_cleared/1",
                 "label": "Fraud Indicator Screening",
                 "result": true,
                 "sub_sub_checks": [
@@ -1052,7 +1052,343 @@
               }
             ]
           }
-        ]
+        ],
+        "validation_hierarchy": {
+          "kind": "root",
+          "label": "valid_claim(claim_auto_1)",
+          "result": true,
+          "children": [
+            {
+              "kind": "branch",
+              "id": "b1",
+              "label": "Driver Fully Eligible",
+              "icon": "👤",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "age_eligible/1",
+                  "label": "Minimum Age & Experience",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Age & experience checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Age ≥ 21",
+                          "fact": "age(C, 34)",
+                          "reason": "34 ≥ 21 ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Experience ≥ 12 mo",
+                          "fact": "driving_experience_months(C, 120)",
+                          "reason": "120 ≥ 12 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "license_compliant/1",
+                  "label": "Licence Validity",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Licence checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Licence valid",
+                          "fact": "license_valid(C, true)",
+                          "reason": "Active ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Not expired",
+                          "fact": "license_expired(C, false)",
+                          "reason": "Current ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Jurisdiction recognised",
+                          "fact": "license_jurisdiction(C, us_state)",
+                          "reason": "US state ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "driving_history_acceptable/1",
+                  "label": "Driving History",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "History checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "No DUI",
+                          "fact": "dui_history(C, 0)",
+                          "reason": "Clean record ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b2",
+              "label": "Vehicle Authorization Valid",
+              "icon": "🚗",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "ownership_established/1",
+                  "label": "Ownership Verification",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Ownership check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Owned by insured",
+                          "fact": "vehicle_ownership(C, own)",
+                          "reason": "Confirmed ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "vehicle_type_covered/1",
+                  "label": "Class & Weight",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Type checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Passenger class",
+                          "fact": "vehicle_class(C, passenger)",
+                          "reason": "Passenger ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Weight ≤ 3,500 kg",
+                          "fact": "vehicle_weight_kg(C, 1580)",
+                          "reason": "1,580 ≤ 3,500 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b3",
+              "label": "Incident Circumstances Covered",
+              "icon": "🔍",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "sobriety_confirmed/1",
+                  "label": "Sobriety Verification",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Sobriety checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "BAC ≤ 0.08",
+                          "fact": "bac(C, 0.00)",
+                          "reason": "0.00 ≤ 0.08 ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "No narcotics",
+                          "fact": "under_influence_narcotics(C, false)",
+                          "reason": "Clear ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "geographic_scope_met/1",
+                  "label": "Geographic Coverage",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Location check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Continental US",
+                          "fact": "incident_location(C, continental_us)",
+                          "reason": "In zone ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "activity_not_excluded/1",
+                  "label": "Activity Exclusions",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Activity check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Normal driving",
+                          "fact": "activity(C, normal_driving)",
+                          "reason": "Permitted ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b4",
+              "label": "Claim Procedure Followed",
+              "icon": "📋",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "reported_in_time/1",
+                  "label": "Reporting Timeline",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Deadline check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Reported ≤ 30 days",
+                          "fact": "days_since_incident(C, 5)",
+                          "reason": "5 ≤ 30 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "evidence_complete/1",
+                  "label": "Police Report Verification",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Report check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Police report on file",
+                          "fact": "police_report(C, true)",
+                          "reason": "Report filed ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "fraud_cleared/1",
+                  "label": "Fraud Indicator Screening",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Fraud check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "No fraud flags",
+                          "fact": "fraud_indicator(C, false)",
+                          "reason": "Clean ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       },
       {
         "id": "claim_auto_2",
@@ -1217,7 +1553,7 @@
             "result": false,
             "sub_checks": [
               {
-                "rule": "sober_at_incident/1",
+                "rule": "sobriety_confirmed/1",
                 "label": "Sobriety Verification",
                 "result": false,
                 "sub_sub_checks": [
@@ -1261,7 +1597,7 @@
                 ]
               },
               {
-                "rule": "not_excluded_activity/1",
+                "rule": "activity_not_excluded/1",
                 "label": "Activity Exclusions",
                 "result": true,
                 "sub_sub_checks": [
@@ -1307,7 +1643,7 @@
                 ]
               },
               {
-                "rule": "police_report_filed/1",
+                "rule": "evidence_complete/1",
                 "label": "Police Report",
                 "result": true,
                 "sub_sub_checks": [
@@ -1326,7 +1662,7 @@
                 ]
               },
               {
-                "rule": "no_fraud/1",
+                "rule": "fraud_cleared/1",
                 "label": "Fraud Screening",
                 "result": true,
                 "sub_sub_checks": [
@@ -1346,7 +1682,335 @@
               }
             ]
           }
-        ]
+        ],
+        "validation_hierarchy": {
+          "kind": "root",
+          "label": "valid_claim(claim_auto_2)",
+          "result": false,
+          "children": [
+            {
+              "kind": "branch",
+              "id": "b1",
+              "label": "Driver Fully Eligible",
+              "icon": "👤",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "age_eligible/1",
+                  "label": "Minimum Age & Experience",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Age checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Age ≥ 21",
+                          "fact": "age(C, 28)",
+                          "reason": "28 ≥ 21 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "license_compliant/1",
+                  "label": "Licence Validity",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Licence checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Licence valid",
+                          "fact": "license_valid(C, true)",
+                          "reason": "Active ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Not expired",
+                          "fact": "license_expired(C, false)",
+                          "reason": "Not expired ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Jurisdiction recognised",
+                          "fact": "license_jurisdiction(C, us_state)",
+                          "reason": "US state ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "driving_history_acceptable/1",
+                  "label": "Driving History",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "History checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "DUI count",
+                          "fact": "dui_history(C, 0)",
+                          "reason": "No DUI ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b2",
+              "label": "Vehicle Authorization Valid",
+              "icon": "🚗",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "ownership_established/1",
+                  "label": "Ownership Verification",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Ownership check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Owned by insured",
+                          "fact": "vehicle_ownership(C, own)",
+                          "reason": "Confirmed ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "vehicle_type_covered/1",
+                  "label": "Class & Weight",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Type checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Passenger class",
+                          "fact": "vehicle_class(C, passenger)",
+                          "reason": "Passenger ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Weight ≤ 3,500 kg",
+                          "fact": "vehicle_weight_kg(C, 1420)",
+                          "reason": "1,420 ≤ 3,500 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b3",
+              "label": "Incident Circumstances Covered",
+              "icon": "🔍",
+              "result": false,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "sobriety_confirmed/1",
+                  "label": "Sobriety Verification",
+                  "result": false,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Sobriety checks",
+                      "result": false,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "BAC ≤ 0.08 g/dL",
+                          "fact": "bac(C, 0.14)",
+                          "reason": "0.14 > 0.08 — DUI VIOLATION ✗",
+                          "result": false,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "No narcotics",
+                          "fact": "under_influence_narcotics(C, false)",
+                          "reason": "Clear ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "geographic_scope_met/1",
+                  "label": "Geographic Coverage",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Location check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Continental US",
+                          "fact": "incident_location(C, continental_us)",
+                          "reason": "In zone ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "activity_not_excluded/1",
+                  "label": "Activity Exclusions",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Activity check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "No excluded activity",
+                          "fact": "activity(C, normal_driving)",
+                          "reason": "Normal driving ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b4",
+              "label": "Claim Procedure Followed",
+              "icon": "📋",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "reported_in_time/1",
+                  "label": "Reporting Timeline",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Deadline check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Reported ≤ 30 days",
+                          "fact": "days_since_incident(C, 2)",
+                          "reason": "2 ≤ 30 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "evidence_complete/1",
+                  "label": "Police Report",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Report check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Report filed",
+                          "fact": "police_report(C, true)",
+                          "reason": "On file ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "fraud_cleared/1",
+                  "label": "Fraud Screening",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Fraud check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "No fraud flags",
+                          "fact": "fraud_indicator(C, false)",
+                          "reason": "Clean ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     ],
     "contract_health": [
@@ -1556,7 +2220,234 @@
               }
             ]
           }
-        ]
+        ],
+        "validation_hierarchy": {
+          "kind": "root",
+          "label": "valid_claim(claim_health_1)",
+          "result": true,
+          "children": [
+            {
+              "kind": "branch",
+              "id": "b1",
+              "label": "Enrollment Requirements Met",
+              "icon": "📅",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "continuous_enrollment_satisfied/1",
+                  "label": "Continuous Enrollment Check",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Enrollment checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Emergency override?",
+                          "fact": "is_emergency(C, true)",
+                          "reason": "Emergency waives 90-day wait ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "pre_existing_waiting_satisfied/1",
+                  "label": "Pre-existing Condition Wait",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Pre-existing check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Pre-existing present?",
+                          "fact": "pre_existing_condition(C, false)",
+                          "reason": "No pre-existing ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b2",
+              "label": "Coverage Applicable",
+              "icon": "🏥",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "provider_network_compliant/1",
+                  "label": "Provider Network Status",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Network check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "In-network provider",
+                          "fact": "provider_network(C, in_network)",
+                          "reason": "In-network 100% ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "authorization_obtained_if_needed/1",
+                  "label": "Prior Authorization Gate",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Auth check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Emergency bypasses auth",
+                          "fact": "is_emergency(C, true)",
+                          "reason": "Emergency override ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "not_cosmetic_only/1",
+                  "label": "Medical Necessity Check",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Cosmetic check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Not purely cosmetic",
+                          "fact": "cosmetic_only(C, false)",
+                          "reason": "Medical procedure ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b3",
+              "label": "Financial Limits Satisfied",
+              "icon": "💰",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "deductible_status_ok/1",
+                  "label": "Annual Deductible Status",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Deductible check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Emergency bypasses deductible",
+                          "fact": "is_emergency(C, true)",
+                          "reason": "Deductible waived ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "within_lifetime_max/1",
+                  "label": "Lifetime Maximum Check",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Lifetime max check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Cumulative ≤ $500,000",
+                          "fact": "cumulative_claims(C, 22400)",
+                          "reason": "$22,400 ≤ $500,000 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b4",
+              "label": "Timely Submission",
+              "icon": "🕒",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "timely_submission/1",
+                  "label": "180-Day Submission Deadline",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Deadline check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Filed within 180 days",
+                          "fact": "days_since_service(C, 2)",
+                          "reason": "2 ≤ 180 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       },
       {
         "id": "claim_health_2",
@@ -1790,7 +2681,266 @@
               }
             ]
           }
-        ]
+        ],
+        "validation_hierarchy": {
+          "kind": "root",
+          "label": "valid_claim(claim_health_2)",
+          "result": false,
+          "children": [
+            {
+              "kind": "branch",
+              "id": "b1",
+              "label": "Enrollment Requirements Met",
+              "icon": "📅",
+              "result": false,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "continuous_enrollment_satisfied/1",
+                  "label": "Continuous Enrollment Check",
+                  "result": false,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Enrollment checks",
+                      "result": false,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Emergency override?",
+                          "fact": "is_emergency(C, false)",
+                          "reason": "Not emergency ✗",
+                          "result": false,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Enrolled ≥ 90 days?",
+                          "fact": "days_enrolled(C, 45)",
+                          "reason": "45 < 90 days — VIOLATION ✗",
+                          "result": false,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "pre_existing_waiting_satisfied/1",
+                  "label": "Pre-existing Condition Wait",
+                  "result": false,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Pre-existing checks",
+                      "result": false,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Pre-existing present?",
+                          "fact": "pre_existing_condition(C, true)",
+                          "reason": "Pre-existing detected ✗",
+                          "result": false,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Waiting ≥ 12 months?",
+                          "fact": "months_since_enrollment(C, 1.5)",
+                          "reason": "1.5 < 12 months — VIOLATION ✗",
+                          "result": false,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b2",
+              "label": "Coverage Applicable",
+              "icon": "🏥",
+              "result": false,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "provider_network_compliant/1",
+                  "label": "Provider Network",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Network check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "In-network",
+                          "fact": "provider_network(C, in_network)",
+                          "reason": "In-network ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "authorization_obtained_if_needed/1",
+                  "label": "Prior Authorization Gate",
+                  "result": false,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Auth checks",
+                      "result": false,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Emergency?",
+                          "fact": "is_emergency(C, false)",
+                          "reason": "Not emergency ✗",
+                          "result": false,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Amount ≤ $5,000?",
+                          "fact": "claim_amount(C, 35000)",
+                          "reason": "$35,000 > $5,000 ✗",
+                          "result": false,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Prior auth obtained?",
+                          "fact": "prior_authorization(C, false)",
+                          "reason": "No auth — VIOLATION ✗",
+                          "result": false,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "not_cosmetic_only/1",
+                  "label": "Medical Necessity",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Cosmetic check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Not cosmetic",
+                          "fact": "cosmetic_only(C, false)",
+                          "reason": "Medical need ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b3",
+              "label": "Financial Limits Satisfied",
+              "icon": "💰",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "deductible_status_ok/1",
+                  "label": "Annual Deductible",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Deductible check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Deductible met",
+                          "fact": "annual_deductible_met(C, true)",
+                          "reason": "Satisfied ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "within_lifetime_max/1",
+                  "label": "Lifetime Maximum",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Lifetime max check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Within $500k limit",
+                          "fact": "cumulative_claims(C, 35000)",
+                          "reason": "$35,000 ≤ $500,000 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b4",
+              "label": "Timely Submission",
+              "icon": "🕒",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "timely_submission/1",
+                  "label": "Submission Deadline",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Deadline check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Filed ≤ 180 days",
+                          "fact": "days_since_service(C, 5)",
+                          "reason": "5 ≤ 180 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     ],
     "contract_travel": [
@@ -2058,7 +3208,304 @@
               }
             ]
           }
-        ]
+        ],
+        "validation_hierarchy": {
+          "kind": "root",
+          "label": "valid_claim(claim_travel_1)",
+          "result": true,
+          "children": [
+            {
+              "kind": "branch",
+              "id": "b1",
+              "label": "Policy Validity Confirmed",
+              "icon": "📜",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "purchased_within_window/1",
+                  "label": "Purchase Window Compliance",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Window check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Purchased ≤ 21 days after deposit",
+                          "fact": "days_after_deposit(C, 10)",
+                          "reason": "10 ≤ 21 days ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "trip_not_already_commenced/1",
+                  "label": "Trip Status at Purchase",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Trip status check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Pre-departure purchase",
+                          "fact": "trip_commenced_at_purchase(C, false)",
+                          "reason": "Pre-departure ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "policy_status_active/1",
+                  "label": "Policy Active Status",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Active status checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "No lapse",
+                          "fact": "policy_lapse(C, false)",
+                          "reason": "Active ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Premium paid",
+                          "fact": "premium_paid(C, true)",
+                          "reason": "Current ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b2",
+              "label": "Covered Event Occurred",
+              "icon": "🎯",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "valid_cancellation_reason/1",
+                  "label": "Cancellation Reason Verification",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Reason checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Claim type is cancellation",
+                          "fact": "claim_type(C, trip_cancellation)",
+                          "reason": "Cancellation ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Reason is in covered list",
+                          "fact": "cancellation_reason(C, illness)",
+                          "reason": "Illness is covered ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b3",
+              "label": "Risk Profile Eligible",
+              "icon": "⚠️",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "medically_fit_at_purchase/1",
+                  "label": "Medical Fitness at Purchase",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Fitness check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Fit at purchase",
+                          "fact": "fit_at_purchase(C, true)",
+                          "reason": "No known conditions ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "destination_covered/1",
+                  "label": "Destination Advisory Check",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Advisory check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Advisory level < 4",
+                          "fact": "destination_advisory_level(C, 1)",
+                          "reason": "Level 1 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "activity_covered/1",
+                  "label": "Activity Coverage",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Activity check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "No extreme sport",
+                          "fact": "activity(C, none)",
+                          "reason": "No activity ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b4",
+              "label": "Documentation Complete",
+              "icon": "📁",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "timely_notification/1",
+                  "label": "Notification Timing",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Notification check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Not baggage — 24h N/A",
+                          "fact": "claim_type(C, trip_cancellation)",
+                          "reason": "N/A for cancellation ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "documents_provided/1",
+                  "label": "Documentation",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Documentation check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "All docs submitted",
+                          "fact": "documentation_provided(C, true)",
+                          "reason": "On file ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "exclusions_clear/1",
+                  "label": "Exclusion Screening",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Exclusion checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Not under influence",
+                          "fact": "under_influence(C, false)",
+                          "reason": "Sober ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Not war-related",
+                          "fact": "war_related(C, false)",
+                          "reason": "No war ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       },
       {
         "id": "claim_travel_2",
@@ -2311,7 +3758,289 @@
               }
             ]
           }
-        ]
+        ],
+        "validation_hierarchy": {
+          "kind": "root",
+          "label": "valid_claim(claim_travel_2)",
+          "result": false,
+          "children": [
+            {
+              "kind": "branch",
+              "id": "b1",
+              "label": "Policy Validity Confirmed",
+              "icon": "📜",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "purchased_within_window/1",
+                  "label": "Purchase Window",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Window check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Purchased ≤ 21 days",
+                          "fact": "days_after_deposit(C, 5)",
+                          "reason": "5 ≤ 21 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "trip_not_already_commenced/1",
+                  "label": "Trip Status",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Trip status check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Pre-departure",
+                          "fact": "trip_commenced_at_purchase(C, false)",
+                          "reason": "Pre-departure ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "policy_status_active/1",
+                  "label": "Active Status",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Active status checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "No lapse",
+                          "fact": "policy_lapse(C, false)",
+                          "reason": "Active ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Premium paid",
+                          "fact": "premium_paid(C, true)",
+                          "reason": "Paid ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b2",
+              "label": "Covered Event Occurred",
+              "icon": "🎯",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "medical_event_covered/1",
+                  "label": "Medical Event Verification",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Medical event checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Medical claim type",
+                          "fact": "claim_type(C, medical)",
+                          "reason": "Medical ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Emergency confirmed",
+                          "fact": "medical_emergency(C, true)",
+                          "reason": "Emergency ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b3",
+              "label": "Risk Profile Eligible",
+              "icon": "⚠️",
+              "result": false,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "medically_fit_at_purchase/1",
+                  "label": "Medical Fitness",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Fitness check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Fit at purchase",
+                          "fact": "fit_at_purchase(C, true)",
+                          "reason": "No known conditions ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "destination_covered/1",
+                  "label": "Destination Advisory",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Advisory check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Advisory level < 4",
+                          "fact": "destination_advisory_level(C, 1)",
+                          "reason": "Level 1 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "activity_covered/1",
+                  "label": "Activity Coverage Check",
+                  "result": false,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Activity checks",
+                      "result": false,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Activity is extreme sport?",
+                          "fact": "activity(C, base_jumping)",
+                          "reason": "BASE jumping — EXCLUDED ✗",
+                          "result": false,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Adventure Rider purchased?",
+                          "fact": "adventure_rider(C, false)",
+                          "reason": "No Rider — VIOLATION ✗",
+                          "result": false,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b4",
+              "label": "Documentation Complete",
+              "icon": "📁",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "documents_provided/1",
+                  "label": "Documentation",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Documentation check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Docs submitted",
+                          "fact": "documentation_provided(C, true)",
+                          "reason": "On file ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "exclusions_clear/1",
+                  "label": "Exclusion Screening",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Exclusion checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Not under influence",
+                          "fact": "under_influence(C, false)",
+                          "reason": "Sober ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Not war-related",
+                          "fact": "war_related(C, false)",
+                          "reason": "No war ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     ],
     "contract_accident": [
@@ -2538,7 +4267,7 @@
                 ]
               },
               {
-                "rule": "injury_claim_compatibility/1",
+                "rule": "injury_consistent_with_claim/1",
                 "label": "Injury-Claim Compatibility",
                 "result": true,
                 "sub_sub_checks": [
@@ -2629,7 +4358,366 @@
               }
             ]
           }
-        ]
+        ],
+        "validation_hierarchy": {
+          "kind": "root",
+          "label": "valid_claim(claim_accident_1)",
+          "result": true,
+          "children": [
+            {
+              "kind": "branch",
+              "id": "b1",
+              "label": "Accidental Origin Confirmed",
+              "icon": "⚡",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "cause_is_accidental/1",
+                  "label": "Accident Type Classification",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Accident type checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Cause is a fall",
+                          "fact": "accident_type(C, fall)",
+                          "reason": "Physical trauma ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Category covered",
+                          "fact": "accident_category(fall, physical_trauma)",
+                          "reason": "physical_trauma ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "not_self_inflicted/1",
+                  "label": "Self-Infliction Exclusion",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Self-infliction check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Not self-inflicted",
+                          "fact": "self_inflicted(C, false)",
+                          "reason": "External event ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "not_excluded_cause/1",
+                  "label": "Cause Exclusion Screening",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Cause exclusion checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Cause class permitted?",
+                          "fact": "cause(C, workplace_accident)",
+                          "reason": "occupational_class — permitted ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "sole_cause_verified/1",
+                  "label": "Sole Cause Verification",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Sole cause checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "No contributing disease",
+                          "fact": "comorbidity_flag(C, none)",
+                          "reason": "No comorbidity ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b2",
+              "label": "Claimant Fully Eligible",
+              "icon": "👤",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "age_in_range/1",
+                  "label": "Age Band Verification",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Age checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Age ≥ 18",
+                          "fact": "age(C, 42)",
+                          "reason": "42 ≥ 18 ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Age ≤ 70",
+                          "fact": "age(C, 42)",
+                          "reason": "42 ≤ 70 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "intoxication_negative/1",
+                  "label": "Substance Check",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Substance checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Not intoxicated",
+                          "fact": "intoxicated(C, false)",
+                          "reason": "Sober ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "No narcotics",
+                          "fact": "narcotics_influence(C, false)",
+                          "reason": "Clear ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "not_professional_sport/1",
+                  "label": "Professional Sport Check",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Sport check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Not paid athlete",
+                          "fact": "activity(C, occupational)",
+                          "reason": "Not sport ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b3",
+              "label": "Medical Criteria Met",
+              "icon": "🩺",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "medical_evidence_provided/1",
+                  "label": "Medical Documentation",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Documentation checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Medical evidence",
+                          "fact": "medical_evidence(C, true)",
+                          "reason": "On file ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Physician licensed",
+                          "fact": "attending_physician_licensed(C, true)",
+                          "reason": "Licensed ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "injury_consistent_with_claim/1",
+                  "label": "Injury-Claim Compatibility",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Compatibility checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Moderate severity + disability",
+                          "fact": "injury_severity(C, moderate)",
+                          "reason": "Compatible ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Amount ≤ $250,000",
+                          "fact": "claim_amount_usd(C, 18000)",
+                          "reason": "$18,000 ≤ $250,000 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b4",
+              "label": "Procedure Compliant",
+              "icon": "📋",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "notification_in_time/1",
+                  "label": "Notification Deadline",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Deadline check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Disability notify ≤ 14 days",
+                          "fact": "days_to_notify(C, 4)",
+                          "reason": "4 ≤ 14 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "benefit_type_valid/1",
+                  "label": "Benefit Type Validation",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Benefit type checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Benefit type is covered",
+                          "fact": "claim_type(C, disability)",
+                          "reason": "Disability benefit valid ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "within_benefit_limits/1",
+                  "label": "Benefit Limit Check",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Limit check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Claim ≤ $250,000",
+                          "fact": "claim_amount_usd(C, 18000)",
+                          "reason": "$18,000 ≤ $250,000 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       },
       {
         "id": "claim_accident_2",
@@ -2841,7 +4929,7 @@
                 ]
               },
               {
-                "rule": "injury_claim_compatibility/1",
+                "rule": "injury_consistent_with_claim/1",
                 "label": "Injury-Claim Compatibility",
                 "result": true,
                 "sub_sub_checks": [
@@ -2874,7 +4962,7 @@
             "result": false,
             "sub_checks": [
               {
-                "rule": "notification_deadline/1",
+                "rule": "notification_in_time/1",
                 "label": "Notification Deadline (OR gate)",
                 "result": false,
                 "sub_sub_checks": [
@@ -2919,7 +5007,336 @@
               }
             ]
           }
-        ]
+        ],
+        "validation_hierarchy": {
+          "kind": "root",
+          "label": "valid_claim(claim_accident_2)",
+          "result": false,
+          "children": [
+            {
+              "kind": "branch",
+              "id": "b1",
+              "label": "Accidental Origin Confirmed",
+              "icon": "⚡",
+              "result": false,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "cause_is_accidental/1",
+                  "label": "Accident Type Classification",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Accident type checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Cause recognisable as accident",
+                          "fact": "accident_type(C, collision)",
+                          "reason": "Collision type ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "not_self_inflicted/1",
+                  "label": "Self-Infliction Exclusion",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Self-infliction check",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Not self-inflicted",
+                          "fact": "self_inflicted(C, false)",
+                          "reason": "External ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "not_excluded_cause/1",
+                  "label": "Cause Exclusion Screening",
+                  "result": false,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Cause exclusion checks",
+                      "result": false,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Cause not in exclusion list",
+                          "fact": "cause(C, professional_sports)",
+                          "reason": "Professional sports is EXCLUDED ✗",
+                          "result": false,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b2",
+              "label": "Claimant Fully Eligible",
+              "icon": "👤",
+              "result": false,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "age_in_range/1",
+                  "label": "Age Band",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Age checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Age ≥ 18",
+                          "fact": "age(C, 26)",
+                          "reason": "26 ≥ 18 ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Age ≤ 70",
+                          "fact": "age(C, 26)",
+                          "reason": "26 ≤ 70 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "intoxication_negative/1",
+                  "label": "Substance Check",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Substance checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Not intoxicated",
+                          "fact": "intoxicated(C, false)",
+                          "reason": "Sober ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "No narcotics",
+                          "fact": "narcotics_influence(C, false)",
+                          "reason": "Clean ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "not_professional_sport/1",
+                  "label": "Professional Sport Exclusion",
+                  "result": false,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Substance & activity checks",
+                      "result": false,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Not intoxicated",
+                          "fact": "intoxicated(C, false)",
+                          "reason": "Sober ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "No narcotics",
+                          "fact": "narcotics_influence(C, false)",
+                          "reason": "Clear ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Not professional sport?",
+                          "fact": "activity(C, professional_sports)",
+                          "reason": "Paid sport — VIOLATION ✗",
+                          "result": false,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b3",
+              "label": "Medical Criteria Met",
+              "icon": "🩺",
+              "result": true,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "medical_evidence_provided/1",
+                  "label": "Medical Documentation",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Documentation checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Medical evidence",
+                          "fact": "medical_evidence(C, true)",
+                          "reason": "On file ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Physician licensed",
+                          "fact": "attending_physician_licensed(C, true)",
+                          "reason": "Licensed ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "injury_consistent_with_claim/1",
+                  "label": "Injury-Claim Compatibility",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Compatibility checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Moderate severity + disability",
+                          "fact": "injury_severity(C, moderate)",
+                          "reason": "Compatible ✓",
+                          "result": true,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Amount ≤ $250,000",
+                          "fact": "claim_amount_usd(C, 9500)",
+                          "reason": "$9,500 ≤ $250,000 ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "kind": "branch",
+              "id": "b4",
+              "label": "Procedure Compliant",
+              "icon": "📋",
+              "result": false,
+              "children": [
+                {
+                  "kind": "sub_check",
+                  "rule": "notification_in_time/1",
+                  "label": "Notification Deadline (OR gate)",
+                  "result": false,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Deadline check",
+                      "result": false,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Death ≤ 30 days?",
+                          "fact": "claim_type(C, disability) — N/A",
+                          "reason": "Not an accidental death claim ✗",
+                          "result": false,
+                          "children": []
+                        },
+                        {
+                          "kind": "leaf",
+                          "label": "Disability ≤ 14 days?",
+                          "fact": "days_to_notify(C, 35)",
+                          "reason": "35 > 14 — LATE NOTIFICATION ✗",
+                          "result": false,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "kind": "sub_check",
+                  "rule": "benefit_type_valid/1",
+                  "label": "Benefit Type Valid",
+                  "result": true,
+                  "children": [
+                    {
+                      "kind": "sub_sub_check",
+                      "label": "Benefit checks",
+                      "result": true,
+                      "children": [
+                        {
+                          "kind": "leaf",
+                          "label": "Recognised benefit type",
+                          "fact": "claim_type(C, disability)",
+                          "reason": "Disability ✓",
+                          "result": true,
+                          "children": []
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
       }
     ]
   }
