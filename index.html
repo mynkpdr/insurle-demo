@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>InsurLE — Insurance Logic Engine</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=IBM+Plex+Mono:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300&display=swap" rel="stylesheet" />
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0d0f;--surface:#13151a;--surface2:#1a1d24;--surface3:#21252f;
+  --border:#2a2d36;--border2:#3a3d48;--text:#e8e6e0;--text2:#9a9898;--text3:#6a6868;
+  --gold:#c9a84c;--gold2:#e8c96b;--green:#3dba7a;--green2:#2a8a55;
+  --red:#e05252;--blue:#5b8dee;--purple:#a78bfa;
+  --mono:'IBM Plex Mono',monospace;--serif:'Source Serif 4',serif;
+  --display:'Playfair Display',serif;--radius:6px;--radius-lg:12px;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--serif);font-size:15px;line-height:1.65;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");opacity:0.4}
+::-webkit-scrollbar{width:6px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+/* HEADER */
+header{position:relative;padding:72px 48px 56px;border-bottom:1px solid var(--border);overflow:hidden}
+header::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% -10%,rgba(201,168,76,.08) 0%,transparent 70%)}
+.header-rule{display:flex;align-items:center;gap:20px;margin-bottom:28px}
+.header-rule::before,.header-rule::after{content:'';flex:1;height:1px;background:linear-gradient(to right,transparent,var(--gold),transparent)}
+.header-emblem{font-size:28px;color:var(--gold);text-shadow:0 0 40px rgba(201,168,76,.5)}
+h1{font-family:var(--display);font-size:clamp(2.8rem,5vw,4.5rem);font-weight:900;letter-spacing:-.02em;text-align:center;background:linear-gradient(135deg,#e8e6e0 30%,var(--gold2) 70%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.1}
+.subtitle{text-align:center;color:var(--text2);font-family:var(--mono);font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;margin-top:14px}
+.header-desc{max-width:680px;margin:24px auto 0;text-align:center;color:var(--text2);font-size:.95rem;line-height:1.7}
+.stats-bar{display:flex;justify-content:center;gap:48px;margin-top:40px}
+.stat{text-align:center}
+.stat-num{font-family:var(--display);font-size:2rem;font-weight:700;color:var(--gold)}
+.stat-label{font-family:var(--mono);font-size:.7rem;text-transform:uppercase;letter-spacing:.15em;color:var(--text3)}
+/* LAYOUT */
+main{max-width:1280px;margin:0 auto;padding:48px 32px 96px}
+.section-header{display:flex;align-items:center;gap:16px;margin-bottom:32px}
+.section-header h2{font-family:var(--display);font-size:1.6rem;font-weight:700;letter-spacing:-.01em}
+.section-divider{flex:1;height:1px;background:linear-gradient(to right,var(--border2),transparent)}
+.section-badge{font-family:var(--mono);font-size:.68rem;letter-spacing:.15em;text-transform:uppercase;color:var(--text3);border:1px solid var(--border);padding:4px 10px;border-radius:20px}
+/* CARDS */
+.contracts-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;margin-bottom:72px}
+.contract-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s;position:relative}
+.contract-card:hover{transform:translateY(-3px);border-color:var(--border2);box-shadow:0 16px 40px rgba(0,0,0,.4)}
+.contract-card.active{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold),0 16px 40px rgba(201,168,76,.15)}
+.card-stripe{height:4px}
+.card-body{padding:22px 22px 18px}
+.card-icon{font-size:2rem;margin-bottom:12px;display:block}
+.card-type{font-family:var(--mono);font-size:.65rem;text-transform:uppercase;letter-spacing:.18em;color:var(--text3);margin-bottom:4px}
+.card-name{font-family:var(--display);font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:8px;line-height:1.3}
+.card-insurer{font-size:.8rem;color:var(--text2);margin-bottom:16px}
+.card-meta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.meta-pill{font-family:var(--mono);font-size:.68rem;padding:3px 10px;border-radius:20px;border:1px solid var(--border);color:var(--text3)}
+.card-claims-row{display:flex;gap:8px;align-items:center;padding-top:14px;border-top:1px solid var(--border)}
+.claims-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:4px}
+.claims-label{font-family:var(--mono);font-size:.68rem;color:var(--text3)}
+.card-actions{display:flex;gap:6px;padding:12px 22px;border-top:1px solid var(--border);background:var(--surface2);flex-wrap:wrap}
+.btn{flex:1;font-family:var(--mono);font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;padding:7px 8px;border-radius:var(--radius);cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text2);transition:all .15s;text-align:center;white-space:nowrap}
+.btn:hover{background:var(--surface3);color:var(--text);border-color:var(--border2)}
+.btn-gold{border-color:var(--gold)!important;color:var(--gold)!important}.btn-gold:hover{background:rgba(201,168,76,.1)!important}
+.btn-green{border-color:var(--green)!important;color:var(--green)!important}.btn-green:hover{background:rgba(61,186,122,.1)!important}
+.btn-purple{border-color:var(--purple)!important;color:var(--purple)!important}.btn-purple:hover{background:rgba(167,139,250,.1)!important}
+.btn-blue{border-color:var(--blue)!important;color:var(--blue)!important}.btn-blue:hover{background:rgba(91,141,238,.1)!important}
+/* DETAIL PANEL */
+.detail-panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:72px;overflow:hidden;animation:fadeSlideIn .25s ease}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.panel-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface2);flex-wrap:wrap}
+.tab-btn{font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;padding:13px 20px;cursor:pointer;background:transparent;border:none;color:var(--text3);border-bottom:2px solid transparent;transition:all .15s}
+.tab-btn:hover{color:var(--text2)}.tab-btn.active{color:var(--gold);border-bottom-color:var(--gold)}
+.tab-content{display:none;padding:32px}.tab-content.active{display:block}
+/* FORMAL CONTRACT DOC */
+.formal-contract{max-width:760px;margin:0 auto;background:#f6f1e8;color:#1a1510;border-radius:var(--radius);overflow:hidden;box-shadow:0 4px 30px rgba(0,0,0,.45)}
+.doc-hdr{background:#1a1510;padding:22px 32px;display:flex;align-items:center;gap:20px}
+.doc-seal{width:56px;height:56px;border-radius:50%;border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0;background:rgba(201,168,76,.1)}
+.doc-co-name{font-family:var(--display);font-size:1.15rem;font-weight:700;color:var(--gold2)}
+.doc-pol-type{font-family:var(--mono);font-size:.62rem;color:var(--text3);letter-spacing:.15em;text-transform:uppercase;margin-top:3px}
+.doc-body{padding:28px 32px}
+.doc-title-sec{text-align:center;padding:14px 0 20px;border-bottom:2px solid #2a2520;margin-bottom:22px}
+.doc-title{font-family:var(--display);font-size:1.35rem;font-weight:700;color:#1a1510}
+.doc-subtitle{font-family:var(--mono);font-size:.62rem;color:#5a5040;letter-spacing:.15em;text-transform:uppercase;margin-top:4px}
+.doc-meta-band{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid #c8bfa8;border-radius:4px;overflow:hidden;margin-bottom:24px}
+.doc-meta-cell{padding:10px 14px;border-right:1px solid #c8bfa8}.doc-meta-cell:last-child{border-right:none}
+.doc-meta-label{font-family:var(--mono);font-size:.56rem;text-transform:uppercase;letter-spacing:.12em;color:#6a5a40;margin-bottom:3px}
+.doc-meta-val{font-size:.83rem;font-weight:600;color:#1a1510}
+.doc-sec{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #e0d8c8}.doc-sec:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.doc-sec-num{font-family:var(--mono);font-size:.6rem;color:#8a6030;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.doc-sec-title{font-family:var(--display);font-size:.93rem;font-weight:700;color:#1a1510;margin-bottom:5px}
+.doc-sec-text{font-size:.82rem;color:#3a3020;line-height:1.72}
+.doc-footer{display:flex;align-items:flex-end;justify-content:space-between;padding-top:20px;border-top:2px solid #2a2520;margin-top:24px}
+.doc-sig-line{width:150px;height:1px;background:#2a2520;margin-bottom:4px}
+.doc-sig-label{font-family:var(--mono);font-size:.58rem;color:#6a5a40;letter-spacing:.1em;text-transform:uppercase}
+.doc-watermark{font-family:var(--display);font-size:2.2rem;font-weight:900;color:rgba(201,168,76,.1);transform:rotate(-20deg);letter-spacing:.1em;user-select:none}
+/* CODE BLOCK */
+.code-block{background:#0a0b0e;border:1px solid var(--border);border-radius:var(--radius);padding:24px;overflow-x:auto}
+.code-hdr{display:flex;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border)}
+.cdot{width:10px;height:10px;border-radius:50%}.cdr{background:#ff5f57}.cdy{background:#febc2e}.cdg{background:#28c840}
+.cfile{font-family:var(--mono);font-size:.7rem;color:var(--text3);margin-left:6px}
+pre{font-family:var(--mono);font-size:.8rem;line-height:1.75;color:#abb2bf;white-space:pre}
+.pl-comment{color:#5c6370;font-style:italic}.pl-pred{color:#61afef}.pl-var{color:#e5c07b}.pl-atom{color:#98c379}.pl-num{color:#d19a66}.pl-op{color:#c678dd}
+/* FLOWCHART */
+.flowchart-wrap{background:#0a0b0e;border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;overflow-x:auto}
+.flowchart-legend{display:flex;gap:20px;flex-wrap:wrap;margin-top:18px;padding-top:14px;border-top:1px solid var(--border)}
+.leg-item{display:flex;align-items:center;gap:7px}
+.leg-dot{width:10px;height:10px;border-radius:2px}
+.leg-label{font-family:var(--mono);font-size:.62rem;color:var(--text3);text-transform:uppercase;letter-spacing:.08em}
+/* PDF VIEWER */
+.pdf-viewer-container{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
+.pdf-viewer-hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--surface3)}
+.pdf-hdr-title{font-family:var(--mono);font-size:.68rem;color:var(--text2);letter-spacing:.1em;text-transform:uppercase}
+.pdf-open-link{font-family:var(--mono);font-size:.62rem;color:var(--gold);text-decoration:none;border:1px solid var(--gold);padding:4px 10px;border-radius:var(--radius);transition:all .15s}
+.pdf-open-link:hover{background:rgba(201,168,76,.1)}
+.pdf-iframe{width:100%;height:580px;border:none;display:block;background:#fff}
+/* CLAIMS */
+.claims-container{margin-bottom:72px}
+.claims-section{margin-bottom:48px}
+.claims-sec-hdr{display:flex;align-items:center;gap:14px;padding:15px 22px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;cursor:pointer;transition:background .15s}
+.claims-sec-hdr:hover{background:var(--surface2)}
+.claims-sec-icon{font-size:1.4rem}
+.claims-sec-name{font-family:var(--display);font-size:1.1rem;font-weight:700;flex:1}
+.claims-sec-type{font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.12em;color:var(--text3)}
+.chevron{color:var(--text3);transition:transform .2s;font-size:.8rem}
+.claims-section.open .chevron{transform:rotate(180deg)}
+.claims-list{border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden}
+.claim-row{display:flex;border-bottom:1px solid var(--border);align-items:stretch}.claim-row:last-child{border-bottom:none}
+.claim-num{width:50px;display:flex;align-items:center;justify-content:center;background:var(--surface2);font-family:var(--mono);font-size:.75rem;color:var(--text3);border-right:1px solid var(--border);flex-shrink:0}
+.claim-body{flex:1;padding:16px 20px;background:var(--surface)}
+.claim-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:9px}
+.claim-claimant{font-family:var(--display);font-size:1rem;font-weight:700;flex:1}
+.claim-badge{font-family:var(--mono);font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;padding:3px 10px;border-radius:20px;border:1px solid;flex-shrink:0}
+.badge-valid{color:var(--green);border-color:var(--green);background:rgba(61,186,122,.08)}
+.badge-invalid{color:var(--red);border-color:var(--red);background:rgba(224,82,82,.08)}
+.claim-meta-row{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:9px}
+.claim-meta-item{font-family:var(--mono);font-size:.66rem;color:var(--text3)}
+.claim-meta-item span{color:var(--text2)}
+.claim-desc{font-size:.84rem;color:var(--text2);line-height:1.6;font-style:italic;margin-bottom:13px}
+.claim-actions{display:flex;gap:7px;flex-wrap:wrap}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:1000;display:flex;align-items:center;justify-content:center;padding:24px;animation:fadeIn .2s ease;backdrop-filter:blur(6px)}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);width:100%;max-width:860px;max-height:92vh;overflow-y:auto;animation:modalSlide .25s ease;box-shadow:0 40px 100px rgba(0,0,0,.7)}
+@keyframes modalSlide{from{transform:scale(.95) translateY(20px);opacity:0}to{transform:scale(1) translateY(0);opacity:1}}
+.modal-hdr{padding:22px 26px 18px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:14px;position:sticky;top:0;background:var(--surface);z-index:10}
+.modal-title-grp{flex:1}
+.modal-subtitle{font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.15em;color:var(--text3);margin-bottom:3px}
+.modal-title{font-family:var(--display);font-size:1.25rem;font-weight:700}
+.modal-close{background:transparent;border:1px solid var(--border);color:var(--text3);width:30px;height:30px;border-radius:var(--radius);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0}
+.modal-close:hover{background:var(--surface2);color:var(--text)}
+.modal-body{padding:22px 26px}
+.modal-tabs{display:flex;gap:3px;margin-bottom:20px;background:var(--surface2);padding:3px;border-radius:var(--radius)}
+.modal-tab{flex:1;font-family:var(--mono);font-size:.62rem;text-transform:uppercase;letter-spacing:.08em;padding:7px;border-radius:4px;cursor:pointer;background:transparent;border:none;color:var(--text3);transition:all .15s}
+.modal-tab.active{background:var(--surface);color:var(--text)}
+.modal-tab-content{display:none}.modal-tab-content.active{display:block}
+/* CLAIM FORM DOC */
+.cf-doc{background:#f5f0e8;border-radius:var(--radius);overflow:hidden;border:1px solid #d4c9b5;box-shadow:2px 4px 20px rgba(0,0,0,.3)}
+.cf-hdr{background:#1a1510;padding:18px 28px;display:flex;align-items:center;justify-content:space-between}
+.cf-insurer{font-family:var(--display);font-size:1.05rem;font-weight:900;color:var(--gold2)}
+.cf-form-id{font-family:var(--mono);font-size:.62rem;color:var(--text3);letter-spacing:.12em}
+.cf-body{padding:24px 28px;position:relative;color:#1a1510}
+.cf-lines{position:absolute;inset:0;pointer-events:none;background-image:repeating-linear-gradient(transparent,transparent 29px,#c8bfa8 29px,#c8bfa8 30px);top:44px;opacity:.32}
+.cf-section-title{font-family:var(--mono);font-size:.58rem;text-transform:uppercase;letter-spacing:.15em;color:#8a6030;margin:0 0 12px;padding:0 0 5px;border-bottom:1px solid #c8bfa8;position:relative}
+.cf-row{display:flex;gap:20px;margin-bottom:14px;position:relative}
+.cf-field{flex:1}
+.cf-label{font-family:var(--mono);font-size:.56rem;text-transform:uppercase;letter-spacing:.12em;color:#6a6050;display:block;margin-bottom:3px}
+.cf-val{font-size:.86rem;font-weight:600;color:#1a1510;padding:2px 0;border-bottom:1px solid #9a8f7a;display:block;min-height:24px}
+.cf-narrative{margin-top:14px;padding:10px 12px;background:rgba(42,37,32,.05);border:1px solid #c8bfa8;border-radius:4px;font-size:.8rem;color:#2a2520;line-height:1.6;font-style:italic;position:relative}
+.cf-checklist{margin-top:14px;position:relative}
+.cf-check-item{display:flex;align-items:center;gap:8px;padding:3px 0;font-size:.8rem;color:#2a2520}
+.cf-checkbox{width:13px;height:13px;border:1px solid #6a5a40;border-radius:2px;display:flex;align-items:center;justify-content:center;font-size:.6rem;flex-shrink:0}
+.cf-checkbox.checked{background:#2a2520;color:#f5f0e8}
+.cf-stamp{position:absolute;bottom:24px;right:26px;width:76px;height:76px;border-radius:50%;border:3px solid;display:flex;align-items:center;justify-content:center;text-align:center;font-family:var(--mono);font-size:.5rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;line-height:1.4;padding:8px;transform:rotate(-15deg);opacity:.9}
+.cf-stamp-valid{border-color:#2d7a4f;color:#2d7a4f}.cf-stamp-invalid{border-color:#b03030;color:#b03030}
+/* PROLOG VIEWER */
+.pl-viewer{background:#0a0b0e;border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.pl-viewer-hdr{padding:9px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:7px;background:#0f1015}
+.pl-dots{display:flex;gap:5px}
+.pl-dot{width:9px;height:9px;border-radius:50%}
+.pl-content{padding:18px 22px;overflow-x:auto}
+.pl-content pre{font-size:.78rem}
+/* NESTED VALIDATION TREE */
+@keyframes spin{to{transform:rotate(360deg)}}
+.vtree-running-hdr{display:flex;align-items:center;gap:12px;padding:14px 18px;margin-bottom:18px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);font-family:var(--mono);font-size:.76rem;color:var(--text2)}
+.vtree-spinner{width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);border-top-color:var(--gold);animation:spin .7s linear infinite;flex-shrink:0}
+.vbranch{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;opacity:0;transform:translateX(-14px)}
+.vbranch.visible{opacity:1;transform:translateX(0);transition:opacity .35s ease,transform .35s ease}
+.vbranch.bp{border-color:rgba(61,186,122,.35);background:rgba(61,186,122,.04)}
+.vbranch.bf{border-color:rgba(224,82,82,.35);background:rgba(224,82,82,.04)}
+.vbranch-hdr{display:flex;align-items:center;gap:10px;padding:12px 15px}
+.vbranch-icon{font-size:1.2rem;flex-shrink:0}
+.vbranch-label{font-family:var(--display);font-size:.92rem;font-weight:700;flex:1}
+.vbranch-status{width:22px;height:22px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700}
+.vs-spin{border:2px solid var(--border);border-top-color:var(--gold);animation:spin .7s linear infinite}
+.vs-pass{background:rgba(61,186,122,.2);color:var(--green)}.vs-fail{background:rgba(224,82,82,.2);color:var(--red)}
+.vbranch-body{padding:0 14px 12px 44px;display:none}.vbranch-body.shown{display:block}
+.vsub{margin-bottom:7px;opacity:0;transform:translateX(-8px)}
+.vsub.visible{opacity:1;transform:translateX(0);transition:opacity .28s ease,transform .28s ease}
+.vsub-hdr{display:flex;align-items:center;gap:7px;padding:7px 11px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface);transition:border-color .3s,background .3s}
+.vsub.sp .vsub-hdr{border-color:rgba(61,186,122,.28);background:rgba(61,186,122,.04)}
+.vsub.sf .vsub-hdr{border-color:rgba(224,82,82,.28);background:rgba(224,82,82,.04)}
+.vsub-connector{font-family:var(--mono);font-size:.68rem;color:var(--text3);flex-shrink:0;opacity:.5}
+.vsub-rule{font-family:var(--mono);font-size:.65rem;color:var(--gold);flex-shrink:0}
+.vsub-label{font-size:.8rem;color:var(--text2);flex:1}
+.vsub-status{width:17px;height:17px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700}
+.vsub-body{padding:5px 0 0 26px;display:none}.vsub-body.shown{display:block}
+.vleaf{display:flex;align-items:flex-start;gap:7px;padding:4px 9px;margin-bottom:3px;border-radius:var(--radius);font-size:.76rem;border-left:2px solid var(--border);opacity:0;transform:translateX(-5px)}
+.vleaf.visible{opacity:1;transform:translateX(0);transition:opacity .22s ease,transform .22s ease}
+.vleaf.lp{border-left-color:var(--green2)}.vleaf.lf{border-left-color:#a83030}
+.vleaf-icon{width:14px;height:14px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:.55rem;font-weight:700;margin-top:1px}
+.vleaf-icon.vs-spin{border:1.5px solid var(--border);border-top-color:var(--gold)}
+.vleaf-icon.vs-pass{background:rgba(61,186,122,.25);color:var(--green)}
+.vleaf-icon.vs-fail{background:rgba(224,82,82,.25);color:var(--red)}
+.vleaf-check{color:var(--text2);flex:1}
+.vleaf-fact{font-family:var(--mono);font-size:.62rem;color:var(--text3);margin-left:4px}
+.vleaf-reason{font-family:var(--mono);font-size:.62rem;margin-left:auto;white-space:nowrap}
+.vleaf-reason.rp{color:var(--green)}.vleaf-reason.rf{color:var(--red);font-weight:600}
+.vtree-verdict{margin-top:20px;padding:18px 22px;border-radius:var(--radius-lg);border:2px solid;display:flex;align-items:center;gap:14px;opacity:0;transform:translateY(10px);transition:opacity .4s ease,transform .4s ease}
+.vtree-verdict.shown{opacity:1;transform:translateY(0)}
+.verdict-approve{border-color:var(--green);background:rgba(61,186,122,.06)}
+.verdict-reject{border-color:var(--red);background:rgba(224,82,82,.06)}
+.verdict-icon{font-size:2rem}
+.verdict-title{font-family:var(--display);font-size:1.3rem;font-weight:700}
+.verdict-approve .verdict-title{color:var(--green)}.verdict-reject .verdict-title{color:var(--red)}
+.verdict-sub{font-size:.8rem;color:var(--text2);margin-top:3px}
+/* VALIDATION RESULT HEADER */
+.result-hdr{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding:14px 18px;border-radius:var(--radius);border:1px solid}
+.result-hdr.valid{background:rgba(61,186,122,.06);border-color:rgba(61,186,122,.3)}
+.result-hdr.invalid{background:rgba(224,82,82,.06);border-color:rgba(224,82,82,.3)}
+.result-icon{font-size:1.8rem}
+.result-tg{flex:1}
+.result-verdict{font-family:var(--display);font-size:1.15rem;font-weight:700}
+.result-hdr.valid .result-verdict{color:var(--green)}.result-hdr.invalid .result-verdict{color:var(--red)}
+.result-sum{font-size:.8rem;color:var(--text2);margin-top:2px}
+/* FOOTER */
+footer{border-top:1px solid var(--border);padding:30px 48px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:14px}
+.footer-brand{font-family:var(--display);font-size:1rem;font-weight:700;color:var(--gold)}
+.footer-note{font-family:var(--mono);font-size:.63rem;color:var(--text3);letter-spacing:.08em}
+@media(max-width:768px){header{padding:48px 24px 40px}main{padding:32px 16px 64px}.stats-bar{gap:24px}.contracts-grid{grid-template-columns:1fr}.doc-meta-band{grid-template-columns:1fr}footer{padding:24px 20px}}
+</style>
+</head>
+<body>
+<header>
+  <div class="header-rule"><div class="header-emblem">⚖</div></div>
+  <h1>InsurLE</h1>
+  <p class="subtitle">Insurance Logic Engine · Prolog-Based Contract Verification</p>
+  <p class="header-desc">Insurance contracts encoded as deeply nested formal logic rules. Claims verified through multi-level predicate resolution — with animated reasoning traces revealing every branch of every decision.</p>
+  <div class="stats-bar">
+    <div class="stat"><div class="stat-num">4</div><div class="stat-label">Contracts</div></div>
+    <div class="stat"><div class="stat-num">8</div><div class="stat-label">Claims</div></div>
+    <div class="stat"><div class="stat-num">48</div><div class="stat-label">Logic Rules</div></div>
+    <div class="stat"><div class="stat-num">4</div><div class="stat-label">Valid Claims</div></div>
+  </div>
+</header>
+<main>
+  <div id="appContent">
+    <div class="section-header"><h2>Insurance Contracts</h2><div class="section-divider"></div><div class="section-badge">InsurLE · Prolog Logic</div></div>
+    <div class="contracts-grid" id="contractsGrid"></div>
+    <div id="contractDetailPanel"></div>
+    <div class="section-header"><h2>Insurance Claims</h2><div class="section-divider"></div><div class="section-badge">Claim Verification Engine</div></div>
+    <div class="claims-container" id="claimsContainer"></div>
+  </div>
+</main>
+<footer>
+  <div class="footer-brand">InsurLE</div>
+  <div class="footer-note">Programmatic insurance verification · Prolog-based logic engine · Demo system</div>
+</footer>
+<div class="modal-overlay" id="modalOverlay" style="display:none" onclick="closeModalBg(event)">
+  <div class="modal" id="modal">
+    <div class="modal-hdr">
+      <div class="modal-title-grp">
+        <div class="modal-subtitle" id="modalSubtitle"></div>
+        <div class="modal-title" id="modalTitle"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+<script>
+/* ════ DATA ════ */
+const CONTRACTS=[{id:'contract_auto',name:'AutoGuard Vehicle Insurance',type:'Vehicle Insurance',insurer:'AutoGuard Insurance Co.',policy_number:'AG-VH-2024-001',effective_date:'2024-01-01',expiry_date:'2024-12-31',premium:'$1,200/year',coverage:'$50,000',icon:'🚗',accent:'#e8b84b',pdf_url:'contract_pdfs/contract_auto.pdf',valid_count:1,invalid_count:1,
+contract_sections:[
+{num:'SEC. 1',title:'Driver Eligibility',text:'The insured driver must be at least 21 years of age at the time of the incident. Drivers with fewer than 12 months of licensed experience require a Novice Endorsement. The driver must hold a valid, unexpired licence issued by a recognised authority and must not have accumulated more than two at-fault accidents in the preceding 36 months.'},
+{num:'SEC. 2',title:'Vehicle Ownership & Authorisation',text:'Coverage applies only when the insured is operating (a) a vehicle they legally own, or (b) a vehicle for which they hold a current notarised written-permission letter countersigned by the registered owner. The vehicle must carry current registration. Loaned vehicles require a co-insured endorsement.'},
+{num:'SEC. 3',title:'Sobriety & Intoxication Exclusion',text:'Any claim arising where the driver\'s BAC exceeded 0.08 g/dL at the time of the incident, or where the driver was under the influence of unprescribed narcotics, is void regardless of whether the substance was the proximate cause. This exclusion survives any legal challenge.'},
+{num:'SEC. 4',title:'Vehicle Classification & Weight',text:'Coverage is limited to personal passenger vehicles with GVWR not exceeding 3,500 kg. Commercial vehicles, motorcycles, off-road vehicles, and race-modified vehicles are excluded unless a Commercial or Sport Rider is explicitly attached to the policy prior to the incident.'},
+{num:'SEC. 5',title:'Geographic Scope',text:'Coverage is limited to incidents occurring within the continental United States. Hawaii and Alaska are covered only under the Pacific Extension Rider. International incidents require a Foreign Territory Endorsement. Incidents in active conflict zones are excluded without exception.'},
+{num:'SEC. 6',title:'Incident Reporting Obligation',text:'Claims must be reported within 30 calendar days of the incident date. For incidents with bodily injury or property damage exceeding $1,000, a police report filed at the scene must accompany the claim. Failure to meet reporting deadlines constitutes grounds for denial.'},
+{num:'SEC. 7',title:'Driving History Requirements',text:'Claims are excluded when the driver has a DUI or DWI conviction within the preceding 60 months. Drivers with a single conviction older than 60 months may qualify subject to payment of a high-risk surcharge and completion of an approved defensive-driving course within 90 days.'},
+{num:'SEC. 8',title:'Fraud & Misrepresentation',text:'Any deliberate misrepresentation, concealment of material fact, or attempted fraud in connection with any claim will result in immediate policy cancellation, denial of all pending claims, and referral to the Special Investigations Unit for potential civil and criminal action.'}
+],
+insurle_rules:`%% AutoGuard Vehicle Insurance — InsurLE Contract Rules
+%% Policy: AG-VH-2024-001
+
+valid_claim(C) :-
+    driver_fully_eligible(C),
+    vehicle_authorization_valid(C),
+    incident_circumstances_covered(C),
+    claim_procedure_followed(C).
+
+%% ── Level 2: Driver Eligibility ──────────────
+driver_fully_eligible(C) :-
+    age_eligible(C),
+    license_compliant(C),
+    driving_history_acceptable(C).
+
+age_eligible(C) :-
+    age(C, A), A >= 21,
+    driving_experience_months(C, E), E >= 12.
+
+license_compliant(C) :-
+    license_valid(C, true),
+    license_expired(C, false),
+    license_jurisdiction(C, Jur),
+    recognized_jurisdiction(Jur).
+
+recognized_jurisdiction(us_state).
+recognized_jurisdiction(canada_province).
+
+driving_history_acceptable(C) :-
+    dui_history(C, 0).
+driving_history_acceptable(C) :-
+    dui_history(C, N), N > 0,
+    months_since_last_dui(C, M), M >= 60,
+    high_risk_surcharge_paid(C, true),
+    defensive_course_completed(C, true).
+
+%% ── Level 2: Vehicle Authorization ──────────
+vehicle_authorization_valid(C) :-
+    ownership_established(C),
+    vehicle_type_covered(C).
+
+ownership_established(C) :-
+    vehicle_ownership(C, own).
+ownership_established(C) :-
+    vehicle_ownership(C, permitted),
+    written_permission(C, true),
+    permission_notarized(C, true).
+
+vehicle_type_covered(C) :-
+    vehicle_class(C, passenger),
+    vehicle_weight_kg(C, W), W =< 3500.
+
+%% ── Level 2: Incident Circumstances ─────────
+incident_circumstances_covered(C) :-
+    sober_at_incident(C),
+    geographic_scope_met(C),
+    not_excluded_activity(C).
+
+sober_at_incident(C) :-
+    bac(C, B), B =< 0.08,
+    under_influence_narcotics(C, false).
+
+geographic_scope_met(C) :-
+    incident_location(C, continental_us).
+
+not_excluded_activity(C) :-
+    activity(C, A),
+    \\+ member(A, [racing,illegal_transport,deliberate_damage]).
+
+%% ── Level 2: Claim Procedure ─────────────────
+claim_procedure_followed(C) :-
+    reported_in_time(C),
+    police_report_filed(C),
+    no_fraud(C).
+
+reported_in_time(C) :-
+    days_since_incident(C, D), D =< 30.
+
+police_report_filed(C) :-
+    police_report(C, true).
+police_report_filed(C) :-
+    incident_value(C, V), V < 1000,
+    police_report(C, not_required).
+
+no_fraud(C) :- fraud_indicator(C, false).`
+},{id:'contract_health',name:'VitalCare Health Insurance',type:'Health Insurance',insurer:'VitalCare Health Group',policy_number:'VC-HLT-2024-087',effective_date:'2024-01-01',expiry_date:'2024-12-31',premium:'$450/month',coverage:'$500,000 lifetime',icon:'🏥',accent:'#4ecb8d',pdf_url:'contract_pdfs/contract_health.pdf',valid_count:1,invalid_count:1,
+contract_sections:[
+{num:'SEC. 1',title:'Continuous Enrollment',text:'The policyholder must be continuously enrolled for a minimum of 90 days before filing any non-emergency claim. Emergency services are covered from day one. Any premium payment lapse exceeding 15 days resets the continuous-enrollment counter to zero.'},
+{num:'SEC. 2',title:'Pre-Existing Conditions',text:'Conditions diagnosed prior to enrollment are subject to a 12-month waiting period from the enrollment date. Genetic conditions and congenital disorders carry a 24-month waiting period. Emergency treatment of pre-existing conditions is covered from day one regardless of waiting periods.'},
+{num:'SEC. 3',title:'Provider Network & Coverage Tiers',text:'In-network providers are reimbursed at 100% after the annual deductible. Out-of-network providers are reimbursed at 60%. Emergency services at any facility are covered at 100% irrespective of network status. The insured must designate a primary care physician within 30 days of enrollment.'},
+{num:'SEC. 4',title:'Prior Authorization',text:'Non-emergency procedures, hospitalisations, or specialist referrals exceeding $5,000 require written prior authorisation from VitalCare\'s Medical Review Board. Requests must be submitted at least 10 business days before the scheduled procedure. Retroactive authorisation is not permitted.'},
+{num:'SEC. 5',title:'Annual Deductible',text:'An annual deductible of $1,500 per individual must be satisfied before non-emergency reimbursements are processed. Emergency claims bypass the deductible entirely. The deductible resets on the policy anniversary date.'},
+{num:'SEC. 6',title:'Lifetime Maximum Benefit',text:'Total lifetime benefits shall not exceed $500,000 per individual policyholder. VitalCare will provide written notification when cumulative claims reach 80% of the lifetime maximum. Benefits beyond the maximum are the sole responsibility of the insured.'},
+{num:'SEC. 7',title:'Cosmetic Procedure Exclusions',text:'Purely cosmetic procedures with no documented medical necessity are excluded. Procedures that are cosmetically performed but medically necessary (e.g. reconstructive surgery following trauma) are covered subject to prior authorisation and medical necessity confirmation from the Review Board.'},
+{num:'SEC. 8',title:'Claim Submission Deadline',text:'All claims must be submitted within 180 calendar days of the date of service. Claims submitted after this deadline are denied regardless of medical validity. Electronic portal submissions are accepted as timely if submitted by 11:59 PM on the 180th day.'}
+],
+insurle_rules:`%% VitalCare Health Insurance — InsurLE Contract Rules
+%% Policy: VC-HLT-2024-087
+
+valid_claim(C) :-
+    enrollment_requirements_met(C),
+    coverage_applicable(C),
+    financial_limits_satisfied(C),
+    timely_submission(C).
+
+%% ── Level 2: Enrollment Requirements ────────
+enrollment_requirements_met(C) :-
+    continuous_enrollment_satisfied(C),
+    pre_existing_waiting_satisfied(C).
+
+continuous_enrollment_satisfied(C) :-
+    is_emergency(C, true).
+continuous_enrollment_satisfied(C) :-
+    days_enrolled(C, D), D >= 90,
+    enrollment_lapse(C, false).
+
+pre_existing_waiting_satisfied(C) :-
+    pre_existing_condition(C, false).
+pre_existing_waiting_satisfied(C) :-
+    is_emergency(C, true).
+pre_existing_waiting_satisfied(C) :-
+    pre_existing_condition(C, true),
+    condition_type(C, standard),
+    months_since_enrollment(C, M), M >= 12.
+pre_existing_waiting_satisfied(C) :-
+    pre_existing_condition(C, true),
+    condition_type(C, genetic),
+    months_since_enrollment(C, M), M >= 24.
+
+%% ── Level 2: Coverage Applicable ────────────
+coverage_applicable(C) :-
+    provider_network_compliant(C),
+    authorization_obtained_if_needed(C),
+    not_cosmetic_only(C).
+
+provider_network_compliant(C) :-
+    provider_network(C, in_network).
+provider_network_compliant(C) :-
+    is_emergency(C, true).
+
+authorization_obtained_if_needed(C) :-
+    is_emergency(C, true).
+authorization_obtained_if_needed(C) :-
+    claim_amount(C, A), A =< 5000.
+authorization_obtained_if_needed(C) :-
+    claim_amount(C, A), A > 5000,
+    prior_authorization(C, true).
+
+not_cosmetic_only(C) :-
+    cosmetic_only(C, false).
+not_cosmetic_only(C) :-
+    cosmetic_only(C, true),
+    medical_necessity(C, true),
+    prior_authorization(C, true).
+
+%% ── Level 2: Financial Limits ────────────────
+financial_limits_satisfied(C) :-
+    deductible_status_ok(C),
+    within_lifetime_max(C).
+
+deductible_status_ok(C) :-
+    is_emergency(C, true).
+deductible_status_ok(C) :-
+    annual_deductible_met(C, true).
+
+within_lifetime_max(C) :-
+    cumulative_claims(C, Total), Total =< 500000.
+
+%% ── Level 2: Timely Submission ───────────────
+timely_submission(C) :-
+    days_since_service(C, D), D =< 180.`
+},{id:'contract_travel',name:'JetSafe Travel Insurance',type:'Travel Insurance',insurer:'JetSafe Global Underwriters',policy_number:'JS-TRV-2024-445',effective_date:'2024-01-01',expiry_date:'2024-12-31',premium:'$85/trip',coverage:'$100,000 per trip',icon:'✈️',accent:'#a78bfa',pdf_url:'contract_pdfs/contract_travel.pdf',valid_count:1,invalid_count:1,
+contract_sections:[
+{num:'SEC. 1',title:'Policy Purchase Window',text:'The policy must be purchased within 21 calendar days of the initial trip deposit to activate pre-departure cancellation coverage. Medical and emergency benefits are active from the policy purchase date through trip completion. Policies purchased after the 21-day window have reduced benefits and exclude cancellation coverage.'},
+{num:'SEC. 2',title:'Trip Cancellation Covered Reasons',text:'Cancellation benefits are payable only for: (a) sudden illness or injury of the insured or immediate family member; (b) death of insured or immediate family member; (c) natural disaster rendering the destination uninhabitable; (d) airline bankruptcy; (e) job loss following 3+ years continuous employment; (f) mandatory government evacuation order.'},
+{num:'SEC. 3',title:'Medical Fitness at Purchase',text:'The insured must be medically fit to travel at the time of policy purchase. Claims arising from conditions known, diagnosed, or symptomatic at purchase are excluded unless a Pre-Existing Condition Waiver is attached. The waiver requires a stable condition for at least 60 days preceding the purchase date.'},
+{num:'SEC. 4',title:'Adventure & Extreme Sports',text:'Injuries sustained during extreme sports including BASE jumping, skydiving, free solo climbing, and cliff diving are excluded unless the Adventure Rider supplement has been purchased simultaneously with the base policy. Retrospective Adventure Rider additions after policy issuance are not permitted.'},
+{num:'SEC. 5',title:'Destination Exclusions',text:'Claims arising from travel to destinations under Level 4 Travel Advisory (Do Not Travel) as issued by the U.S. Department of State at time of departure are excluded. Active conflict zones, sanctioned countries, and territories under pandemic quarantine are also excluded.'},
+{num:'SEC. 6',title:'Baggage & Personal Effects',text:'Lost or stolen baggage requires a police report filed within 24 hours of discovery of loss. Maximum single-item value is $500 unless a High-Value Item Rider is attached. Electronics require proof of purchase. The aggregate baggage limit is $2,500 per trip.'},
+{num:'SEC. 7',title:'Documentation Requirements',text:'All claims must be accompanied by original receipts, invoices, medical records, police reports, or other official documentation as applicable. Undocumented claims will be suspended for up to 60 days pending receipt of required documentation, after which they may be denied.'},
+{num:'SEC. 8',title:'Substance Use & War Exclusions',text:'Claims arising from incidents where the insured was under the influence of alcohol (BAC > 0.08) or unprescribed substances are excluded without exception. Claims arising from war, terrorism, civil insurrection, military action, or nuclear incidents are also excluded.'}
+],
+insurle_rules:`%% JetSafe Travel Insurance — InsurLE Contract Rules
+%% Policy: JS-TRV-2024-445
+
+valid_claim(C) :-
+    policy_validity_confirmed(C),
+    covered_event_occurred(C),
+    risk_profile_eligible(C),
+    documentation_complete(C).
+
+%% ── Level 2: Policy Validity ─────────────────
+policy_validity_confirmed(C) :-
+    purchased_within_window(C),
+    trip_not_already_commenced(C),
+    policy_status_active(C).
+
+purchased_within_window(C) :-
+    days_after_deposit(C, D), D =< 21.
+purchased_within_window(C) :-
+    claim_type(C, T),
+    \\+ member(T, [trip_cancellation]).
+
+trip_not_already_commenced(C) :-
+    trip_commenced_at_purchase(C, false).
+
+policy_status_active(C) :-
+    policy_lapse(C, false),
+    premium_paid(C, true).
+
+%% ── Level 2: Covered Event ───────────────────
+covered_event_occurred(C) :-
+    claim_type(C, trip_cancellation),
+    valid_cancellation_reason(C).
+covered_event_occurred(C) :-
+    claim_type(C, medical),
+    medical_event_covered(C).
+covered_event_occurred(C) :-
+    claim_type(C, baggage),
+    baggage_loss_documented(C).
+
+valid_cancellation_reason(C) :-
+    cancellation_reason(C, R),
+    member(R, [illness,injury,death,natural_disaster,
+               airline_bankruptcy,job_loss,mandatory_evacuation]).
+
+medical_event_covered(C) :- medical_emergency(C, true).
+medical_event_covered(C) :-
+    medical_emergency(C, false),
+    treatment_required(C, true),
+    pre_existing_condition(C, false).
+
+baggage_loss_documented(C) :-
+    police_report_filed(C, true),
+    hours_to_report(C, H), H =< 24.
+
+%% ── Level 2: Risk Profile ────────────────────
+risk_profile_eligible(C) :-
+    medically_fit_at_purchase(C),
+    destination_covered(C),
+    activity_covered(C).
+
+medically_fit_at_purchase(C) :-
+    fit_at_purchase(C, true).
+medically_fit_at_purchase(C) :-
+    fit_at_purchase(C, false),
+    pre_existing_waiver(C, true),
+    condition_stable_60_days(C, true).
+
+destination_covered(C) :-
+    destination_advisory_level(C, L), L < 4.
+
+activity_covered(C) :-
+    activity(C, A), \\+ extreme_sport(A).
+activity_covered(C) :-
+    activity(C, A), extreme_sport(A),
+    adventure_rider(C, true).
+
+extreme_sport(base_jumping). extreme_sport(skydiving).
+extreme_sport(free_solo_climbing). extreme_sport(cliff_diving).
+
+%% ── Level 2: Documentation & Exclusions ──────
+documentation_complete(C) :-
+    timely_notification(C),
+    documents_provided(C),
+    exclusions_clear(C).
+
+timely_notification(C) :- claim_type(C, baggage), hours_to_report(C, H), H =< 24.
+timely_notification(C) :- claim_type(C, T), T \\= baggage.
+
+documents_provided(C) :- documentation_provided(C, true).
+
+exclusions_clear(C) :-
+    under_influence(C, false),
+    war_related(C, false).`
+},{id:'contract_accident',name:'ShieldPlus Personal Accident',type:'Accident Insurance',insurer:'ShieldPlus Casualty Ltd.',policy_number:'SP-ACC-2024-209',effective_date:'2024-01-01',expiry_date:'2024-12-31',premium:'$180/year',coverage:'$250,000',icon:'🛡️',accent:'#f87171',pdf_url:'contract_pdfs/contract_accident.pdf',valid_count:1,invalid_count:1,
+contract_sections:[
+{num:'SEC. 1',title:'Accidental Death & Dismemberment',text:'Full principal benefit is payable upon accidental death, or loss of both hands, both feet, sight in both eyes, or any combination thereof. Fifty percent of the principal benefit is payable for loss of one hand, one foot, or sight in one eye. Benefits are paid in addition to any disability benefit, subject to the aggregate policy maximum.'},
+{num:'SEC. 2',title:'Temporary Total Disability',text:'Weekly disability benefit of $500 is payable for up to 52 consecutive weeks when the insured is wholly unable to engage in any gainful occupation due to a covered accident. A 7-day elimination period applies from date of accident. The insured must remain under continuous care of a licensed physician.'},
+{num:'SEC. 3',title:'Age Requirements',text:'Coverage applies to individuals aged 18 to 70 at the time of the accident. Policyholders reaching age 71 during the policy period retain coverage until the next policy anniversary date, after which the policy must be converted or allowed to lapse. No coverage for minors under 18.'},
+{num:'SEC. 4',title:'Accidental Origin Requirement',text:'Benefits are payable only for injuries caused by a sudden, unexpected, external, and accidental event. The accident must be the direct and independent cause of the covered loss with no contributing disease, bodily infirmity, or mental disorder. Injuries from illness, gradual onset, or natural aging are excluded.'},
+{num:'SEC. 5',title:'Cause Exclusions',text:'No benefit is payable for accidents resulting from: (a) self-inflicted injury or suicide attempt; (b) participation in criminal activity; (c) acts of war or military operations; (d) professional sports or organised athletic competitions where the claimant receives remuneration; (e) hazardous occupational activities without a Hazardous Occupation Rider.'},
+{num:'SEC. 6',title:'Substance Exclusion',text:'No benefit is payable if the accident occurred while the insured was intoxicated (BAC > 0.08 g/dL) or under the influence of unprescribed narcotics, hallucinogens, or stimulants. This exclusion applies regardless of causal relationship between the substance and the accident.'},
+{num:'SEC. 7',title:'Claim Notification Deadlines',text:'Accidental death claims must be notified within 30 calendar days of death. Disability claims must be notified within 14 days of the commencement of disability. Late notification will only be accepted where the insured demonstrates notification was impossible due to circumstances wholly beyond their control.'},
+{num:'SEC. 8',title:'Medical Evidence Required',text:'All claims require a completed attending physician statement from a licensed medical practitioner. For disability claims, monthly ongoing physician statements are required throughout the disability period. Self-reported injuries without corroborating medical documentation are excluded from coverage entirely.'}
+],
+insurle_rules:`%% ShieldPlus Personal Accident — InsurLE Contract Rules
+%% Policy: SP-ACC-2024-209
+
+valid_claim(C) :-
+    accidental_origin_confirmed(C),
+    claimant_fully_eligible(C),
+    medical_criteria_met(C),
+    procedure_compliant(C).
+
+%% ── Level 2: Accidental Origin ───────────────
+accidental_origin_confirmed(C) :-
+    cause_is_accidental(C),
+    not_self_inflicted(C),
+    not_excluded_cause(C).
+
+cause_is_accidental(C) :-
+    accident_type(C, T),
+    member(T, [fall,collision,burn,drowning,
+               electrocution,workplace_accident,road_accident]).
+
+not_self_inflicted(C) :- self_inflicted(C, false).
+
+not_excluded_cause(C) :-
+    cause(C, Cause),
+    \\+ member(Cause, [self_inflicted,criminal_activity,
+                       war,professional_sports]).
+
+%% ── Level 2: Claimant Eligibility ────────────
+claimant_fully_eligible(C) :-
+    age_in_range(C),
+    intoxication_negative(C),
+    not_professional_sport(C).
+
+age_in_range(C) :- age(C, A), A >= 18, A =< 70.
+
+intoxication_negative(C) :-
+    intoxicated(C, false),
+    narcotics_influence(C, false).
+
+not_professional_sport(C) :-
+    activity(C, A),
+    \\+ member(A, [professional_sports,paid_athletics]).
+
+%% ── Level 2: Medical Criteria ────────────────
+medical_criteria_met(C) :-
+    medical_evidence_provided(C),
+    licensed_provider_confirms(C),
+    injury_consistent_with_claim(C).
+
+medical_evidence_provided(C) :- medical_evidence(C, true).
+licensed_provider_confirms(C) :- attending_physician_licensed(C, true).
+
+injury_consistent_with_claim(C) :-
+    injury_severity(C, S), claim_type(C, T),
+    compatible_severity_type(S, T).
+
+compatible_severity_type(minor, disability).
+compatible_severity_type(moderate, disability).
+compatible_severity_type(major, disability).
+compatible_severity_type(major, accidental_death).
+compatible_severity_type(fatal, accidental_death).
+
+%% ── Level 2: Procedure Compliance ────────────
+procedure_compliant(C) :-
+    notification_in_time(C),
+    benefit_type_valid(C),
+    within_benefit_limits(C).
+
+notification_in_time(C) :-
+    claim_type(C, accidental_death),
+    days_to_notify(C, D), D =< 30.
+notification_in_time(C) :-
+    claim_type(C, disability),
+    days_to_notify(C, D), D =< 14.
+
+benefit_type_valid(C) :-
+    claim_type(C, T),
+    member(T, [accidental_death,disability]).
+
+within_benefit_limits(C) :-
+    claim_amount_usd(C, A), A =< 250000.`}];
+
+const CLAIMS_DATA={
+contract_auto:[{id:'claim_auto_1',claimant:'Robert Harrington',date:'2024-03-15',incident_date:'2024-03-10',description:'Rear-end collision at Main St & 5th Ave, Springfield. Driver was stationary at a red light when struck from behind by an uninsured motorist at approximately 35 mph. Police attended and filed report at the scene.',amount:'$8,500',expected:'VALID',
+facts_prolog:['age(claim_auto_1, 34).','driving_experience_months(claim_auto_1, 156).','license_valid(claim_auto_1, true).','license_expired(claim_auto_1, false).','license_jurisdiction(claim_auto_1, us_state).','dui_history(claim_auto_1, 0).','vehicle_ownership(claim_auto_1, own).','vehicle_class(claim_auto_1, passenger).','vehicle_weight_kg(claim_auto_1, 1380).','bac(claim_auto_1, 0.0).','under_influence_narcotics(claim_auto_1, false).','incident_location(claim_auto_1, continental_us).','activity(claim_auto_1, normal_driving).','days_since_incident(claim_auto_1, 5).','police_report(claim_auto_1, true).','fraud_indicator(claim_auto_1, false).'],
+validation_tree:[
+{id:'b1',label:'Driver Fully Eligible',icon:'👤',result:true,sub_checks:[
+  {rule:'age_eligible/1',label:'Minimum Age & Experience',result:true,leaf_checks:[{check:'Age ≥ 21',fact:'age(claim, 34)',result:true,reason:'34 ≥ 21 ✓'}]},
+  {rule:'license_compliant/1',label:'Licence Validity & Jurisdiction',result:true,leaf_checks:[{check:'Licence valid',fact:'license_valid(claim, true)',result:true,reason:'Active ✓'},{check:'Not expired',fact:'license_expired(claim, false)',result:true,reason:'Not expired ✓'},{check:'Recognised jurisdiction',fact:'license_jurisdiction(claim, us_state)',result:true,reason:'US state ✓'}]},
+  {rule:'driving_history_acceptable/1',label:'Driving History Review',result:true,leaf_checks:[{check:'DUI conviction count',fact:'dui_history(claim, 0)',result:true,reason:'No DUI record ✓'}]}
+]},
+{id:'b2',label:'Vehicle Authorization Valid',icon:'🚗',result:true,sub_checks:[
+  {rule:'ownership_established/1',label:'Ownership Chain Verification',result:true,leaf_checks:[{check:'Vehicle owned by insured',fact:'vehicle_ownership(claim, own)',result:true,reason:'Confirmed ownership ✓'}]},
+  {rule:'vehicle_type_covered/1',label:'Class & Weight Check',result:true,leaf_checks:[{check:'Passenger class',fact:'vehicle_class(claim, passenger)',result:true,reason:'Passenger ✓'},{check:'Weight ≤ 3,500 kg',fact:'vehicle_weight_kg(claim, 1380)',result:true,reason:'1,380 kg ≤ 3,500 ✓'}]}
+]},
+{id:'b3',label:'Incident Circumstances Covered',icon:'🔍',result:true,sub_checks:[
+  {rule:'sober_at_incident/1',label:'Sobriety Verification',result:true,leaf_checks:[{check:'BAC ≤ 0.08',fact:'bac(claim, 0.0)',result:true,reason:'0.00 ≤ 0.08 ✓'},{check:'No narcotics',fact:'under_influence_narcotics(claim, false)',result:true,reason:'Clear ✓'}]},
+  {rule:'geographic_scope_met/1',label:'Geographic Coverage',result:true,leaf_checks:[{check:'Continental US',fact:'incident_location(claim, continental_us)',result:true,reason:'In zone ✓'}]},
+  {rule:'not_excluded_activity/1',label:'Activity Exclusions Check',result:true,leaf_checks:[{check:'No excluded activity',fact:'activity(claim, normal_driving)',result:true,reason:'Normal driving ✓'}]}
+]},
+{id:'b4',label:'Claim Procedure Followed',icon:'📋',result:true,sub_checks:[
+  {rule:'reported_in_time/1',label:'Reporting Timeline',result:true,leaf_checks:[{check:'Reported ≤ 30 days',fact:'days_since_incident(claim, 5)',result:true,reason:'5 ≤ 30 ✓'}]},
+  {rule:'police_report_filed/1',label:'Police Report Verification',result:true,leaf_checks:[{check:'Police report on file',fact:'police_report(claim, true)',result:true,reason:'Report filed ✓'}]},
+  {rule:'no_fraud/1',label:'Fraud Indicator Screening',result:true,leaf_checks:[{check:'No fraud flags',fact:'fraud_indicator(claim, false)',result:true,reason:'Clean ✓'}]}
+]}
+]},{id:'claim_auto_2',claimant:'Marcia Delgado',date:'2024-06-22',incident_date:'2024-06-20',description:'Single vehicle accident on Highway 101. Vehicle drifted off the road and struck a guardrail at 65 mph. Responding officers administered a breathalyzer recording BAC of 0.14% — nearly double the legal limit of 0.08%.',amount:'$12,000',expected:'INVALID',
+facts_prolog:['age(claim_auto_2, 28).','driving_experience_months(claim_auto_2, 84).','license_valid(claim_auto_2, true).','license_expired(claim_auto_2, false).','license_jurisdiction(claim_auto_2, us_state).','dui_history(claim_auto_2, 0).','vehicle_ownership(claim_auto_2, own).','vehicle_class(claim_auto_2, passenger).','vehicle_weight_kg(claim_auto_2, 1420).','bac(claim_auto_2, 0.14).','under_influence_narcotics(claim_auto_2, false).','incident_location(claim_auto_2, continental_us).','activity(claim_auto_2, normal_driving).','days_since_incident(claim_auto_2, 2).','police_report(claim_auto_2, true).','fraud_indicator(claim_auto_2, false).'],
+validation_tree:[
+{id:'b1',label:'Driver Fully Eligible',icon:'👤',result:true,sub_checks:[
+  {rule:'age_eligible/1',label:'Minimum Age & Experience',result:true,leaf_checks:[{check:'Age ≥ 21',fact:'age(claim, 28)',result:true,reason:'28 ≥ 21 ✓'}]},
+  {rule:'license_compliant/1',label:'Licence Validity',result:true,leaf_checks:[{check:'Licence valid',fact:'license_valid(claim, true)',result:true,reason:'Active ✓'},{check:'Not expired',fact:'license_expired(claim, false)',result:true,reason:'Not expired ✓'},{check:'Jurisdiction recognised',fact:'license_jurisdiction(claim, us_state)',result:true,reason:'US state ✓'}]},
+  {rule:'driving_history_acceptable/1',label:'Driving History',result:true,leaf_checks:[{check:'DUI count',fact:'dui_history(claim, 0)',result:true,reason:'No DUI ✓'}]}
+]},
+{id:'b2',label:'Vehicle Authorization Valid',icon:'🚗',result:true,sub_checks:[
+  {rule:'ownership_established/1',label:'Ownership Verification',result:true,leaf_checks:[{check:'Owned by insured',fact:'vehicle_ownership(claim, own)',result:true,reason:'Confirmed ✓'}]},
+  {rule:'vehicle_type_covered/1',label:'Class & Weight',result:true,leaf_checks:[{check:'Passenger class',fact:'vehicle_class(claim, passenger)',result:true,reason:'Passenger ✓'},{check:'Weight ≤ 3,500 kg',fact:'vehicle_weight_kg(claim, 1420)',result:true,reason:'1,420 ≤ 3,500 ✓'}]}
+]},
+{id:'b3',label:'Incident Circumstances Covered',icon:'🔍',result:false,sub_checks:[
+  {rule:'sober_at_incident/1',label:'Sobriety Verification',result:false,leaf_checks:[{check:'BAC ≤ 0.08 g/dL',fact:'bac(claim, 0.14)',result:false,reason:'0.14 > 0.08 — DUI VIOLATION ✗'},{check:'No narcotics',fact:'under_influence_narcotics(claim, false)',result:true,reason:'Clear ✓'}]},
+  {rule:'geographic_scope_met/1',label:'Geographic Coverage',result:true,leaf_checks:[{check:'Continental US',fact:'incident_location(claim, continental_us)',result:true,reason:'In zone ✓'}]},
+  {rule:'not_excluded_activity/1',label:'Activity Exclusions',result:true,leaf_checks:[{check:'No excluded activity',fact:'activity(claim, normal_driving)',result:true,reason:'Normal driving ✓'}]}
+]},
+{id:'b4',label:'Claim Procedure Followed',icon:'📋',result:true,sub_checks:[
+  {rule:'reported_in_time/1',label:'Reporting Timeline',result:true,leaf_checks:[{check:'Reported ≤ 30 days',fact:'days_since_incident(claim, 2)',result:true,reason:'2 ≤ 30 ✓'}]},
+  {rule:'police_report_filed/1',label:'Police Report',result:true,leaf_checks:[{check:'Report filed',fact:'police_report(claim, true)',result:true,reason:'On file ✓'}]},
+  {rule:'no_fraud/1',label:'Fraud Screening',result:true,leaf_checks:[{check:'No fraud flags',fact:'fraud_indicator(claim, false)',result:true,reason:'Clean ✓'}]}
+]}
+]}],
+contract_health:[{id:'claim_health_1',claimant:'Priya Sharma',date:'2024-05-20',incident_date:'2024-05-18',description:'Emergency appendectomy at St. Mary\'s Medical Center (in-network). Sudden acute appendicitis requiring immediate surgical intervention. No pre-existing condition. Policy active for 210 continuous days.',amount:'$22,400',expected:'VALID',
+facts_prolog:['is_emergency(claim_health_1, true).','days_enrolled(claim_health_1, 210).','enrollment_lapse(claim_health_1, false).','pre_existing_condition(claim_health_1, false).','provider_network(claim_health_1, in_network).','claim_amount(claim_health_1, 22400).','prior_authorization(claim_health_1, false).','cosmetic_only(claim_health_1, false).','annual_deductible_met(claim_health_1, true).','cumulative_claims(claim_health_1, 22400).','days_since_service(claim_health_1, 2).'],
+validation_tree:[
+{id:'b1',label:'Enrollment Requirements Met',icon:'📅',result:true,sub_checks:[
+  {rule:'continuous_enrollment_satisfied/1',label:'Continuous Enrollment Check',result:true,leaf_checks:[{check:'Emergency override?',fact:'is_emergency(claim, true)',result:true,reason:'Emergency waives 90-day wait ✓'}]},
+  {rule:'pre_existing_waiting_satisfied/1',label:'Pre-existing Condition Wait',result:true,leaf_checks:[{check:'Pre-existing condition present?',fact:'pre_existing_condition(claim, false)',result:true,reason:'No pre-existing ✓'}]}
+]},
+{id:'b2',label:'Coverage Applicable',icon:'🏥',result:true,sub_checks:[
+  {rule:'provider_network_compliant/1',label:'Provider Network Status',result:true,leaf_checks:[{check:'In-network provider',fact:'provider_network(claim, in_network)',result:true,reason:'In-network 100% ✓'}]},
+  {rule:'authorization_obtained_if_needed/1',label:'Prior Authorization Gate',result:true,leaf_checks:[{check:'Emergency bypasses auth requirement',fact:'is_emergency(claim, true)',result:true,reason:'Emergency override ✓'}]},
+  {rule:'not_cosmetic_only/1',label:'Medical Necessity Check',result:true,leaf_checks:[{check:'Not purely cosmetic',fact:'cosmetic_only(claim, false)',result:true,reason:'Medical procedure ✓'}]}
+]},
+{id:'b3',label:'Financial Limits Satisfied',icon:'💰',result:true,sub_checks:[
+  {rule:'deductible_status_ok/1',label:'Annual Deductible Status',result:true,leaf_checks:[{check:'Emergency bypasses deductible',fact:'is_emergency(claim, true)',result:true,reason:'Deductible waived ✓'}]},
+  {rule:'within_lifetime_max/1',label:'Lifetime Maximum Check',result:true,leaf_checks:[{check:'Cumulative ≤ $500,000',fact:'cumulative_claims(claim, 22400)',result:true,reason:'$22,400 ≤ $500,000 ✓'}]}
+]},
+{id:'b4',label:'Timely Submission',icon:'🕒',result:true,sub_checks:[
+  {rule:'timely_submission/1',label:'180-Day Submission Deadline',result:true,leaf_checks:[{check:'Filed within 180 days',fact:'days_since_service(claim, 2)',result:true,reason:'2 ≤ 180 ✓'}]}
+]}
+]},{id:'claim_health_2',claimant:'George Whitfield',date:'2024-07-10',incident_date:'2024-07-05',description:'Elective knee replacement for osteoarthritis diagnosed 3 years prior. Patient enrolled only 45 days ago, no prior authorisation obtained for $35,000 procedure. Three distinct violations: enrollment, waiting period, and prior auth.',amount:'$35,000',expected:'INVALID',
+facts_prolog:['is_emergency(claim_health_2, false).','days_enrolled(claim_health_2, 45).','enrollment_lapse(claim_health_2, false).','pre_existing_condition(claim_health_2, true).','condition_type(claim_health_2, standard).','months_since_enrollment(claim_health_2, 1.5).','provider_network(claim_health_2, in_network).','claim_amount(claim_health_2, 35000).','prior_authorization(claim_health_2, false).','cosmetic_only(claim_health_2, false).','annual_deductible_met(claim_health_2, true).','cumulative_claims(claim_health_2, 35000).','days_since_service(claim_health_2, 5).'],
+validation_tree:[
+{id:'b1',label:'Enrollment Requirements Met',icon:'📅',result:false,sub_checks:[
+  {rule:'continuous_enrollment_satisfied/1',label:'Continuous Enrollment Check',result:false,leaf_checks:[{check:'Emergency override?',fact:'is_emergency(claim, false)',result:false,reason:'Not emergency ✗'},{check:'Enrolled ≥ 90 days?',fact:'days_enrolled(claim, 45)',result:false,reason:'45 < 90 days — VIOLATION ✗'}]},
+  {rule:'pre_existing_waiting_satisfied/1',label:'Pre-existing Condition Wait',result:false,leaf_checks:[{check:'Pre-existing present?',fact:'pre_existing_condition(claim, true)',result:false,reason:'Pre-existing detected ✗'},{check:'Waiting ≥ 12 months?',fact:'months_since_enrollment(claim, 1.5)',result:false,reason:'1.5 < 12 months — VIOLATION ✗'}]}
+]},
+{id:'b2',label:'Coverage Applicable',icon:'🏥',result:false,sub_checks:[
+  {rule:'provider_network_compliant/1',label:'Provider Network',result:true,leaf_checks:[{check:'In-network',fact:'provider_network(claim, in_network)',result:true,reason:'In-network ✓'}]},
+  {rule:'authorization_obtained_if_needed/1',label:'Prior Authorization Gate',result:false,leaf_checks:[{check:'Emergency?',fact:'is_emergency(claim, false)',result:false,reason:'Not emergency ✗'},{check:'Amount ≤ $5,000?',fact:'claim_amount(claim, 35000)',result:false,reason:'$35,000 > $5,000 ✗'},{check:'Prior auth obtained?',fact:'prior_authorization(claim, false)',result:false,reason:'No auth — VIOLATION ✗'}]},
+  {rule:'not_cosmetic_only/1',label:'Medical Necessity',result:true,leaf_checks:[{check:'Not cosmetic',fact:'cosmetic_only(claim, false)',result:true,reason:'Medical need ✓'}]}
+]},
+{id:'b3',label:'Financial Limits Satisfied',icon:'💰',result:true,sub_checks:[
+  {rule:'deductible_status_ok/1',label:'Annual Deductible',result:true,leaf_checks:[{check:'Deductible met',fact:'annual_deductible_met(claim, true)',result:true,reason:'Satisfied ✓'}]},
+  {rule:'within_lifetime_max/1',label:'Lifetime Maximum',result:true,leaf_checks:[{check:'Within $500k limit',fact:'cumulative_claims(claim, 35000)',result:true,reason:'$35,000 ≤ $500,000 ✓'}]}
+]},
+{id:'b4',label:'Timely Submission',icon:'🕒',result:true,sub_checks:[
+  {rule:'timely_submission/1',label:'Submission Deadline',result:true,leaf_checks:[{check:'Filed ≤ 180 days',fact:'days_since_service(claim, 5)',result:true,reason:'5 ≤ 180 ✓'}]}
+]}
+]}],
+contract_travel:[{id:'claim_travel_1',claimant:'Hana Kobayashi',date:'2024-04-10',incident_date:'2024-04-08',description:'Trip cancellation due to sudden hospitalisation of insured\'s mother with a cardiac event. Policy purchased 10 days after booking deposit. Full documentation provided including hospital admission letter and attending physician statement.',amount:'$3,200',expected:'VALID',
+facts_prolog:['days_after_deposit(claim_travel_1, 10).','trip_commenced_at_purchase(claim_travel_1, false).','policy_lapse(claim_travel_1, false).','premium_paid(claim_travel_1, true).','claim_type(claim_travel_1, trip_cancellation).','cancellation_reason(claim_travel_1, illness).','fit_at_purchase(claim_travel_1, true).','destination_advisory_level(claim_travel_1, 1).','activity(claim_travel_1, none).','adventure_rider(claim_travel_1, false).','documentation_provided(claim_travel_1, true).','under_influence(claim_travel_1, false).','war_related(claim_travel_1, false).'],
+validation_tree:[
+{id:'b1',label:'Policy Validity Confirmed',icon:'📜',result:true,sub_checks:[
+  {rule:'purchased_within_window/1',label:'Purchase Window Compliance',result:true,leaf_checks:[{check:'Purchased ≤ 21 days after deposit',fact:'days_after_deposit(claim, 10)',result:true,reason:'10 ≤ 21 days ✓'}]},
+  {rule:'trip_not_already_commenced/1',label:'Trip Status at Purchase',result:true,leaf_checks:[{check:'Pre-departure purchase',fact:'trip_commenced_at_purchase(claim, false)',result:true,reason:'Pre-departure ✓'}]},
+  {rule:'policy_status_active/1',label:'Policy Active Status',result:true,leaf_checks:[{check:'No lapse',fact:'policy_lapse(claim, false)',result:true,reason:'Active ✓'},{check:'Premium paid',fact:'premium_paid(claim, true)',result:true,reason:'Current ✓'}]}
+]},
+{id:'b2',label:'Covered Event Occurred',icon:'🎯',result:true,sub_checks:[
+  {rule:'valid_cancellation_reason/1',label:'Cancellation Reason Verification',result:true,leaf_checks:[{check:'Claim type is cancellation',fact:'claim_type(claim, trip_cancellation)',result:true,reason:'Cancellation ✓'},{check:'Reason is in covered list',fact:'cancellation_reason(claim, illness)',result:true,reason:'Illness is covered ✓'}]}
+]},
+{id:'b3',label:'Risk Profile Eligible',icon:'⚠️',result:true,sub_checks:[
+  {rule:'medically_fit_at_purchase/1',label:'Medical Fitness at Purchase',result:true,leaf_checks:[{check:'Fit at purchase',fact:'fit_at_purchase(claim, true)',result:true,reason:'No known conditions ✓'}]},
+  {rule:'destination_covered/1',label:'Destination Advisory Check',result:true,leaf_checks:[{check:'Advisory level < 4',fact:'destination_advisory_level(claim, 1)',result:true,reason:'Level 1 ✓'}]},
+  {rule:'activity_covered/1',label:'Activity Coverage',result:true,leaf_checks:[{check:'No extreme sport',fact:'activity(claim, none)',result:true,reason:'No activity ✓'}]}
+]},
+{id:'b4',label:'Documentation Complete',icon:'📁',result:true,sub_checks:[
+  {rule:'timely_notification/1',label:'Notification Timing',result:true,leaf_checks:[{check:'Not baggage — 24h N/A',fact:'claim_type(claim, trip_cancellation)',result:true,reason:'N/A for cancellation ✓'}]},
+  {rule:'documents_provided/1',label:'Documentation',result:true,leaf_checks:[{check:'All docs submitted',fact:'documentation_provided(claim, true)',result:true,reason:'On file ✓'}]},
+  {rule:'exclusions_clear/1',label:'Exclusion Screening',result:true,leaf_checks:[{check:'Not under influence',fact:'under_influence(claim, false)',result:true,reason:'Sober ✓'},{check:'Not war-related',fact:'war_related(claim, false)',result:true,reason:'No war ✓'}]}
+]}
+]},{id:'claim_travel_2',claimant:'Dmitri Volkov',date:'2024-08-30',incident_date:'2024-08-25',description:'Medical claim for injuries during a BASE jumping excursion in the Swiss Alps. Policy purchased 5 days after deposit but does NOT include the Adventure Rider supplement. Claims $15,000 for emergency evacuation and treatment.',amount:'$15,000',expected:'INVALID',
+facts_prolog:['days_after_deposit(claim_travel_2, 5).','trip_commenced_at_purchase(claim_travel_2, false).','policy_lapse(claim_travel_2, false).','premium_paid(claim_travel_2, true).','claim_type(claim_travel_2, medical).','medical_emergency(claim_travel_2, true).','fit_at_purchase(claim_travel_2, true).','destination_advisory_level(claim_travel_2, 1).','activity(claim_travel_2, base_jumping).','adventure_rider(claim_travel_2, false).','documentation_provided(claim_travel_2, true).','under_influence(claim_travel_2, false).','war_related(claim_travel_2, false).'],
+validation_tree:[
+{id:'b1',label:'Policy Validity Confirmed',icon:'📜',result:true,sub_checks:[
+  {rule:'purchased_within_window/1',label:'Purchase Window',result:true,leaf_checks:[{check:'Purchased ≤ 21 days',fact:'days_after_deposit(claim, 5)',result:true,reason:'5 ≤ 21 ✓'}]},
+  {rule:'trip_not_already_commenced/1',label:'Trip Status',result:true,leaf_checks:[{check:'Pre-departure',fact:'trip_commenced_at_purchase(claim, false)',result:true,reason:'Pre-departure ✓'}]},
+  {rule:'policy_status_active/1',label:'Active Status',result:true,leaf_checks:[{check:'No lapse',fact:'policy_lapse(claim, false)',result:true,reason:'Active ✓'},{check:'Premium paid',fact:'premium_paid(claim, true)',result:true,reason:'Paid ✓'}]}
+]},
+{id:'b2',label:'Covered Event Occurred',icon:'🎯',result:true,sub_checks:[
+  {rule:'medical_event_covered/1',label:'Medical Event Verification',result:true,leaf_checks:[{check:'Medical claim type',fact:'claim_type(claim, medical)',result:true,reason:'Medical ✓'},{check:'Emergency confirmed',fact:'medical_emergency(claim, true)',result:true,reason:'Emergency ✓'}]}
+]},
+{id:'b3',label:'Risk Profile Eligible',icon:'⚠️',result:false,sub_checks:[
+  {rule:'medically_fit_at_purchase/1',label:'Medical Fitness',result:true,leaf_checks:[{check:'Fit at purchase',fact:'fit_at_purchase(claim, true)',result:true,reason:'No known conditions ✓'}]},
+  {rule:'destination_covered/1',label:'Destination Advisory',result:true,leaf_checks:[{check:'Advisory level < 4',fact:'destination_advisory_level(claim, 1)',result:true,reason:'Level 1 ✓'}]},
+  {rule:'activity_covered/1',label:'Activity Coverage Check',result:false,leaf_checks:[{check:'Activity is extreme sport?',fact:'activity(claim, base_jumping)',result:false,reason:'BASE jumping — EXCLUDED ✗'},{check:'Adventure Rider purchased?',fact:'adventure_rider(claim, false)',result:false,reason:'No Rider — VIOLATION ✗'}]}
+]},
+{id:'b4',label:'Documentation Complete',icon:'📁',result:true,sub_checks:[
+  {rule:'documents_provided/1',label:'Documentation',result:true,leaf_checks:[{check:'Docs submitted',fact:'documentation_provided(claim, true)',result:true,reason:'On file ✓'}]},
+  {rule:'exclusions_clear/1',label:'Exclusion Screening',result:true,leaf_checks:[{check:'Not under influence',fact:'under_influence(claim, false)',result:true,reason:'Sober ✓'},{check:'Not war-related',fact:'war_related(claim, false)',result:true,reason:'No war ✓'}]}
+]}
+]}],
+contract_accident:[{id:'claim_accident_1',claimant:'Samuel Okonkwo',date:'2024-02-14',incident_date:'2024-02-10',description:'Workplace fall from scaffolding at a construction site, resulting in a fractured left arm and two broken ribs. Incident occurred during regular working hours. Police and medical reports filed. Insurer notified within 4 days.',amount:'$18,000',expected:'VALID',
+facts_prolog:['accident_type(claim_accident_1, workplace_accident).','self_inflicted(claim_accident_1, false).','cause(claim_accident_1, workplace_accident).','age(claim_accident_1, 38).','intoxicated(claim_accident_1, false).','narcotics_influence(claim_accident_1, false).','activity(claim_accident_1, construction_work).','medical_evidence(claim_accident_1, true).','attending_physician_licensed(claim_accident_1, true).','injury_severity(claim_accident_1, major).','claim_type(claim_accident_1, disability).','days_to_notify(claim_accident_1, 4).','claim_amount_usd(claim_accident_1, 18000).'],
+validation_tree:[
+{id:'b1',label:'Accidental Origin Confirmed',icon:'⚡',result:true,sub_checks:[
+  {rule:'cause_is_accidental/1',label:'Accident Type Classification',result:true,leaf_checks:[{check:'Cause is recognised accident type',fact:'accident_type(claim, workplace_accident)',result:true,reason:'Workplace accident covered ✓'}]},
+  {rule:'not_self_inflicted/1',label:'Self-Infliction Exclusion',result:true,leaf_checks:[{check:'Not self-inflicted',fact:'self_inflicted(claim, false)',result:true,reason:'External cause ✓'}]},
+  {rule:'not_excluded_cause/1',label:'Cause Exclusion Screening',result:true,leaf_checks:[{check:'Cause not in exclusion list',fact:'cause(claim, workplace_accident)',result:true,reason:'Not excluded ✓'}]}
+]},
+{id:'b2',label:'Claimant Fully Eligible',icon:'👤',result:true,sub_checks:[
+  {rule:'age_in_range/1',label:'Age Band Verification',result:true,leaf_checks:[{check:'Age ≥ 18',fact:'age(claim, 38)',result:true,reason:'38 ≥ 18 ✓'},{check:'Age ≤ 70',fact:'age(claim, 38)',result:true,reason:'38 ≤ 70 ✓'}]},
+  {rule:'intoxication_negative/1',label:'Substance Exclusion Check',result:true,leaf_checks:[{check:'Not intoxicated',fact:'intoxicated(claim, false)',result:true,reason:'Sober ✓'},{check:'No narcotics',fact:'narcotics_influence(claim, false)',result:true,reason:'Clean ✓'}]},
+  {rule:'not_professional_sport/1',label:'Professional Sport Exclusion',result:true,leaf_checks:[{check:'Not professional sport activity',fact:'activity(claim, construction_work)',result:true,reason:'Construction — not excluded ✓'}]}
+]},
+{id:'b3',label:'Medical Criteria Met',icon:'🩺',result:true,sub_checks:[
+  {rule:'medical_evidence_provided/1',label:'Medical Evidence Sufficiency',result:true,leaf_checks:[{check:'Medical evidence provided',fact:'medical_evidence(claim, true)',result:true,reason:'Records submitted ✓'}]},
+  {rule:'licensed_provider_confirms/1',label:'Provider Licensing Check',result:true,leaf_checks:[{check:'Physician licensed',fact:'attending_physician_licensed(claim, true)',result:true,reason:'Verified ✓'}]},
+  {rule:'injury_consistent_with_claim/1',label:'Injury-Claim Consistency',result:true,leaf_checks:[{check:'Severity matches claim type',fact:'injury_severity(claim, major) + claim_type(claim, disability)',result:true,reason:'Major injury consistent with disability ✓'}]}
+]},
+{id:'b4',label:'Procedure Compliant',icon:'📋',result:true,sub_checks:[
+  {rule:'notification_in_time/1',label:'Notification Timeline',result:true,leaf_checks:[{check:'Disability notify ≤ 14 days',fact:'days_to_notify(claim, 4)',result:true,reason:'4 ≤ 14 ✓'}]},
+  {rule:'benefit_type_valid/1',label:'Benefit Type Validation',result:true,leaf_checks:[{check:'Benefit type is covered',fact:'claim_type(claim, disability)',result:true,reason:'Disability benefit valid ✓'}]},
+  {rule:'within_benefit_limits/1',label:'Benefit Limit Check',result:true,leaf_checks:[{check:'Claim ≤ $250,000',fact:'claim_amount_usd(claim, 18000)',result:true,reason:'$18,000 ≤ $250,000 ✓'}]}
+]}
+]},{id:'claim_accident_2',claimant:'Fiona MacAllister',date:'2024-11-05',incident_date:'2024-10-01',description:'Fractured collarbone sustained during a semi-professional rugby match. Claimant is a paid player for a local club team. Notification filed 35 days after the incident — 21 days beyond the 14-day disability window. Two violations identified.',amount:'$9,500',expected:'INVALID',
+facts_prolog:['accident_type(claim_accident_2, collision).','self_inflicted(claim_accident_2, false).','cause(claim_accident_2, professional_sports).','age(claim_accident_2, 26).','intoxicated(claim_accident_2, false).','narcotics_influence(claim_accident_2, false).','activity(claim_accident_2, professional_sports).','medical_evidence(claim_accident_2, true).','attending_physician_licensed(claim_accident_2, true).','injury_severity(claim_accident_2, moderate).','claim_type(claim_accident_2, disability).','days_to_notify(claim_accident_2, 35).','claim_amount_usd(claim_accident_2, 9500).'],
+validation_tree:[
+{id:'b1',label:'Accidental Origin Confirmed',icon:'⚡',result:false,sub_checks:[
+  {rule:'cause_is_accidental/1',label:'Accident Type Classification',result:true,leaf_checks:[{check:'Cause recognisable as accident',fact:'accident_type(claim, collision)',result:true,reason:'Collision type ✓'}]},
+  {rule:'not_self_inflicted/1',label:'Self-Infliction Exclusion',result:true,leaf_checks:[{check:'Not self-inflicted',fact:'self_inflicted(claim, false)',result:true,reason:'External ✓'}]},
+  {rule:'not_excluded_cause/1',label:'Cause Exclusion Screening',result:false,leaf_checks:[{check:'Cause not in exclusion list',fact:'cause(claim, professional_sports)',result:false,reason:'Professional sports is EXCLUDED ✗'}]}
+]},
+{id:'b2',label:'Claimant Fully Eligible',icon:'👤',result:false,sub_checks:[
+  {rule:'age_in_range/1',label:'Age Band',result:true,leaf_checks:[{check:'Age ≥ 18',fact:'age(claim, 26)',result:true,reason:'26 ≥ 18 ✓'},{check:'Age ≤ 70',fact:'age(claim, 26)',result:true,reason:'26 ≤ 70 ✓'}]},
+  {rule:'intoxication_negative/1',label:'Substance Check',result:true,leaf_checks:[{check:'Not intoxicated',fact:'intoxicated(claim, false)',result:true,reason:'Sober ✓'},{check:'No narcotics',fact:'narcotics_influence(claim, false)',result:true,reason:'Clean ✓'}]},
+  {rule:'not_professional_sport/1',label:'Professional Sport Exclusion',result:false,leaf_checks:[{check:'Activity not professional sport?',fact:'activity(claim, professional_sports)',result:false,reason:'Paid rugby — EXCLUDED ✗'}]}
+]},
+{id:'b3',label:'Medical Criteria Met',icon:'🩺',result:true,sub_checks:[
+  {rule:'medical_evidence_provided/1',label:'Medical Evidence',result:true,leaf_checks:[{check:'Evidence provided',fact:'medical_evidence(claim, true)',result:true,reason:'Records on file ✓'}]},
+  {rule:'licensed_provider_confirms/1',label:'Provider Licensing',result:true,leaf_checks:[{check:'Licensed physician',fact:'attending_physician_licensed(claim, true)',result:true,reason:'Verified ✓'}]},
+  {rule:'injury_consistent_with_claim/1',label:'Injury-Claim Consistency',result:true,leaf_checks:[{check:'Moderate injury + disability',fact:'injury_severity(claim, moderate)',result:true,reason:'Consistent ✓'}]}
+]},
+{id:'b4',label:'Procedure Compliant',icon:'📋',result:false,sub_checks:[
+  {rule:'notification_in_time/1',label:'Notification Timeline',result:false,leaf_checks:[{check:'Disability notify ≤ 14 days',fact:'days_to_notify(claim, 35)',result:false,reason:'35 > 14 days — VIOLATION ✗'}]},
+  {rule:'benefit_type_valid/1',label:'Benefit Type',result:true,leaf_checks:[{check:'Covered benefit type',fact:'claim_type(claim, disability)',result:true,reason:'Disability ✓'}]},
+  {rule:'within_benefit_limits/1',label:'Benefit Limits',result:true,leaf_checks:[{check:'Amount ≤ $250,000',fact:'claim_amount_usd(claim, 9500)',result:true,reason:'$9,500 ≤ $250,000 ✓'}]}
+]}
+]}]};
+
+/* ════ FLOWCHART SVG BUILDER ════ */
+function buildFlowchartSVG(cid) {
+  const labels = {
+    contract_auto: [['Driver','Eligible?','Age · Lic · History'],['Vehicle','Auth Valid?','Ownership · Class · Wt'],['Incident','Covered?','BAC · Location · Activity'],['Procedure','Followed?','Report · Police · Fraud']],
+    contract_health: [['Enrollment','Satisfied?','90-Day · Pre-Existing'],['Coverage','Applicable?','Network · Auth · Cosmetic'],['Fin. Limits','OK?','Deductible · $500k Max'],['Submitted','In Time?','≤ 180 Days']],
+    contract_travel: [['Policy','Valid?','Window · Active · PreDep'],['Covered','Event?','Cancellation · Medical'],['Risk Profile','Eligible?','Fit · Dest · Activity'],['Docs','Complete?','Notice · Docs · Exclusions']],
+    contract_accident: [['Accidental','Origin?','Type · NotSelf · Cause'],['Claimant','Eligible?','Age · Sober · NotPro'],['Medical','Criteria?','Evidence · Licensed'],['Procedure','Compliant?','Notify · Type · Limits']]
+  };
+  const L = labels[cid] || labels.contract_auto;
+
+  // Layout constants
+  const CX=310, W=840, H=940;
+  const DH=48, DW=102;                     // diamond half-height / half-width
+  const ys=[90, 250, 410, 570, 730];        // start-node y, then 4 decision-diamond y positions
+  const ay=870;                             // APPROVED box centre-y  (separate from last diamond)
+  const RX=658;                             // reject-box centre-x
+
+  let svg=`<svg viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" style="width:100%;max-width:840px;display:block;margin:0 auto">
+<defs>
+  <linearGradient id="gStart" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#2a2010"/><stop offset="100%" stop-color="#3a3020"/></linearGradient>
+  <linearGradient id="gDec" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#161b28"/><stop offset="100%" stop-color="#1e2535"/></linearGradient>
+  <linearGradient id="gRej" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#1f0a0a"/><stop offset="100%" stop-color="#2a1212"/></linearGradient>
+  <linearGradient id="gApp" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#091a10"/><stop offset="100%" stop-color="#112a1a"/></linearGradient>
+  <filter id="glow"><feGaussianBlur stdDeviation="3" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <marker id="arG" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#3dba7a"/></marker>
+  <marker id="arR" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#e05252"/></marker>
+</defs>`;
+
+  // ── START NODE ──────────────────────────────────
+  svg+=`<rect x="${CX-84}" y="${ys[0]-30}" width="168" height="60" rx="30" fill="url(#gStart)" stroke="#c9a84c" stroke-width="2.5" filter="url(#glow)"/>
+<text x="${CX}" y="${ys[0]-6}" fill="#c9a84c" font-family="IBM Plex Mono" font-size="13" font-weight="700" text-anchor="middle" letter-spacing="2">CLAIM</text>
+<text x="${CX}" y="${ys[0]+12}" fill="#c9a84c" font-family="IBM Plex Mono" font-size="13" font-weight="700" text-anchor="middle" letter-spacing="2">SUBMITTED</text>`;
+
+  // ── DECISION DIAMONDS ──────────────────────────
+  for(let i=0;i<4;i++){
+    const dy  = ys[i+1];
+    const prev = i===0 ? ys[0]+30 : ys[i]+DH+2;   // bottom of previous node
+
+    // Vertical YES arrow (down)
+    svg+=`<line x1="${CX}" y1="${prev}" x2="${CX}" y2="${dy-DH-8}" stroke="#3dba7a" stroke-width="2.5" marker-end="url(#arG)"/>`;
+
+    // Diamond shape
+    svg+=`<polygon points="${CX},${dy-DH} ${CX+DW},${dy} ${CX},${dy+DH} ${CX-DW},${dy}" fill="url(#gDec)" stroke="#5b8dee" stroke-width="2" filter="url(#glow)"/>`;
+
+    // Keep label lines nearer the center so longer text stays within the diamond width.
+    svg+=`<text x="${CX}" y="${dy-14}" fill="#a0b8e8" font-family="IBM Plex Mono" font-size="11" font-weight="500" text-anchor="middle">${L[i][0]}</text>`;
+    svg+=`<text x="${CX}" y="${dy+4}"  fill="#c9d8ff" font-family="IBM Plex Mono" font-size="12" font-weight="700" text-anchor="middle">${L[i][1]}</text>`;
+    svg+=`<text x="${CX}" y="${dy+18}" fill="#5a6a9a" font-family="IBM Plex Mono" font-size="8"  text-anchor="middle">${L[i][2]}</text>`;
+
+    // NO label + horizontal arrow to reject box
+    svg+=`<text x="${CX+DW+7}" y="${dy-6}" fill="#e05252" font-family="IBM Plex Mono" font-size="10" font-weight="700">NO</text>`;
+    svg+=`<line x1="${CX+DW}" y1="${dy}" x2="${RX-74}" y2="${dy}" stroke="#e05252" stroke-width="2.5" marker-end="url(#arR)"/>`;
+
+    // YES label (below diamond)
+    svg+=`<text x="${CX-13}" y="${dy+DH+18}" fill="#3dba7a" font-family="IBM Plex Mono" font-size="10" font-weight="700">YES</text>`;
+
+    // Reject box
+    svg+=`<rect x="${RX-74}" y="${dy-34}" width="148" height="68" rx="9" fill="url(#gRej)" stroke="#e05252" stroke-width="2"/>`;
+    svg+=`<text x="${RX}" y="${dy-14}" fill="#e05252" font-family="IBM Plex Mono" font-size="12" font-weight="700" text-anchor="middle">✗ REJECT</text>`;
+    svg+=`<text x="${RX}" y="${dy+5}"  fill="#b05050" font-family="IBM Plex Mono" font-size="10" text-anchor="middle">${L[i][1].replace('?','').trim()}</text>`;
+    svg+=`<text x="${RX}" y="${dy+22}" fill="#8a4040" font-family="IBM Plex Mono" font-size="9"  text-anchor="middle">Violation</text>`;
+  }
+
+  // ── APPROVED BOX (separate y from last diamond) ─
+  const approveLineStart = ys[4]+DH+2;   // bottom of 4th diamond
+  svg+=`<line x1="${CX}" y1="${approveLineStart}" x2="${CX}" y2="${ay-38}" stroke="#3dba7a" stroke-width="2.5" marker-end="url(#arG)"/>
+<rect x="${CX-92}" y="${ay-36}" width="184" height="72" rx="12" fill="url(#gApp)" stroke="#3dba7a" stroke-width="2.5" filter="url(#glow)"/>
+<text x="${CX}" y="${ay-12}" fill="#3dba7a" font-family="IBM Plex Mono" font-size="14" font-weight="700" text-anchor="middle" letter-spacing="1">✓ APPROVED</text>`;
+  svg+=`<text x="${CX}" y="${ay+8}"  fill="#2a8a55" font-family="IBM Plex Mono" font-size="10" text-anchor="middle">All predicates unified</text>`;
+  svg+=`<text x="${CX}" y="${ay+25}" fill="#2a8a55" font-family="IBM Plex Mono" font-size="10" text-anchor="middle">valid_claim(C) :- TRUE</text>`;
+
+  svg+=`</svg>`;
+  return svg;
+}
+
+/* ════ PROLOG HIGHLIGHTER ════ */
+function hlProlog(line){
+  const esc=s=>s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  if(!line.trim()) return '';
+  if(/^\s*%/.test(line)) return `<span class="pl-comment">${esc(line)}</span>`;
+  let r=esc(line);
+  r=r.replace(/\b(:-)\b/g,'<span class="pl-op">:-</span>');
+  r=r.replace(/\b([A-Z][A-Za-z0-9_]*)\b/g,'<span class="pl-var">$1</span>');
+  r=r.replace(/\b(\d+\.?\d*)\b/g,'<span class="pl-num">$1</span>');
+  r=r.replace(/\b([a-z][a-z_0-9]*)(?=\()/g,'<span class="pl-pred">$1</span>');
+  r=r.replace(/\b(true|false|own|permitted|continental_us|passenger|commercial|illness|injury|death|natural_disaster|airline_bankruptcy|trip_cancellation|medical|baggage|disability|accidental_death|workplace_accident|professional_sports|criminal_activity|war|self_inflicted|base_jumping|skydiving|free_solo_climbing|in_network|standard|genetic|us_state)\b/g,'<span class="pl-atom">$1</span>');
+  return r;
+}
+
+/* ════ STATE ════ */
+let activeContractId=null;
+
+/* ════ RENDER CONTRACTS ════ */
+function renderContracts(){
+  document.getElementById('contractsGrid').innerHTML=CONTRACTS.map(c=>`
+    <div class="contract-card" id="card-${c.id}" onclick="selectContract('${c.id}')">
+      <div class="card-stripe" style="background:${c.accent}"></div>
+      <div class="card-body">
+        <span class="card-icon">${c.icon}</span>
+        <div class="card-type">${c.type}</div>
+        <div class="card-name">${c.name}</div>
+        <div class="card-insurer">${c.insurer}</div>
+        <div class="card-meta"><span class="meta-pill">${c.premium}</span><span class="meta-pill">${c.coverage}</span></div>
+        <div class="card-claims-row">
+          <span class="claims-dot" style="background:var(--green)"></span><span class="claims-label">${c.valid_count} valid</span>
+          <span class="claims-dot" style="background:var(--red);margin-left:8px"></span><span class="claims-label">${c.invalid_count} invalid</span>
+        </div>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn-gold" onclick="event.stopPropagation();showContractDoc('${c.id}')">📄 Contract</button>
+        <button class="btn btn-purple" onclick="event.stopPropagation();showFlowchart('${c.id}')">🗺 Flowchart</button>
+        <button class="btn" onclick="event.stopPropagation();showInsurLE('${c.id}')">⚙ InsurLE</button>
+        <button class="btn btn-blue" onclick="event.stopPropagation();showPDF('${c.id}')">📑 PDF</button>
+      </div>
+    </div>`).join('');
+}
+
+function selectContract(id){
+  document.querySelectorAll('.contract-card').forEach(el=>el.classList.remove('active'));
+  if(activeContractId===id){activeContractId=null;document.getElementById('contractDetailPanel').innerHTML='';return;}
+  activeContractId=id;
+  document.getElementById(`card-${id}`).classList.add('active');
+  showDetailPanel(id,'doc');
+}
+
+function showDetailPanel(id, tab){
+  const c=CONTRACTS.find(x=>x.id===id);
+  const panel=document.getElementById('contractDetailPanel');
+  panel.innerHTML=`<div class="detail-panel">
+    <div class="panel-tabs">
+      <button class="tab-btn ${tab==='doc'?'active':''}" onclick="switchTab('${id}','doc',this)">📄 Contract Document</button>
+      <button class="tab-btn ${tab==='insurle'?'active':''}" onclick="switchTab('${id}','insurle',this)">⚙ InsurLE Rules</button>
+      <button class="tab-btn ${tab==='flowchart'?'active':''}" onclick="switchTab('${id}','flowchart',this)">🗺 Decision Flowchart</button>
+      <button class="tab-btn ${tab==='pdf'?'active':''}" onclick="switchTab('${id}','pdf',this)">📑 Policy PDF</button>
+    </div>
+    <div class="tab-content ${tab==='doc'?'active':''}" id="tab-doc-${id}">${buildContractDoc(c)}</div>
+    <div class="tab-content ${tab==='insurle'?'active':''}" id="tab-insurle-${id}">${buildInsurLE(c)}</div>
+    <div class="tab-content ${tab==='flowchart'?'active':''}" id="tab-flowchart-${id}">${buildFlowchartPanel(c)}</div>
+    <div class="tab-content ${tab==='pdf'?'active':''}" id="tab-pdf-${id}">${buildPDFPanel(c)}</div>
+  </div>`;
+  panel.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function switchTab(id,tab,btn){
+  const panel=document.getElementById('contractDetailPanel').querySelector('.detail-panel');
+  panel.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  panel.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById(`tab-${tab}-${id}`).classList.add('active');
+}
+
+function showContractDoc(id){document.querySelectorAll('.contract-card').forEach(el=>el.classList.remove('active'));document.getElementById(`card-${id}`).classList.add('active');activeContractId=id;showDetailPanel(id,'doc');}
+function showFlowchart(id){document.querySelectorAll('.contract-card').forEach(el=>el.classList.remove('active'));document.getElementById(`card-${id}`).classList.add('active');activeContractId=id;showDetailPanel(id,'flowchart');}
+function showInsurLE(id){document.querySelectorAll('.contract-card').forEach(el=>el.classList.remove('active'));document.getElementById(`card-${id}`).classList.add('active');activeContractId=id;showDetailPanel(id,'insurle');}
+function showPDF(id){document.querySelectorAll('.contract-card').forEach(el=>el.classList.remove('active'));document.getElementById(`card-${id}`).classList.add('active');activeContractId=id;showDetailPanel(id,'pdf');}
+
+function buildContractDoc(c){
+  const secs=c.contract_sections.map(s=>`
+    <div class="doc-sec">
+      <div class="doc-sec-num">${s.num}</div>
+      <div class="doc-sec-title">${s.title}</div>
+      <div class="doc-sec-text">${s.text}</div>
+    </div>`).join('');
+  return `<div class="formal-contract">
+    <div class="doc-hdr">
+      <div class="doc-seal">${c.icon}</div>
+      <div><div class="doc-co-name">${c.insurer}</div><div class="doc-pol-type">${c.type} · Policy Document</div></div>
+    </div>
+    <div class="doc-body">
+      <div class="doc-title-sec">
+        <div class="doc-title">${c.name}</div>
+        <div class="doc-subtitle">Insurance Contract · Policy No. ${c.policy_number}</div>
+      </div>
+      <div class="doc-meta-band">
+        <div class="doc-meta-cell"><div class="doc-meta-label">Effective Date</div><div class="doc-meta-val">${c.effective_date}</div></div>
+        <div class="doc-meta-cell"><div class="doc-meta-label">Expiry Date</div><div class="doc-meta-val">${c.expiry_date}</div></div>
+        <div class="doc-meta-cell"><div class="doc-meta-label">Premium</div><div class="doc-meta-val">${c.premium}</div></div>
+        <div class="doc-meta-cell"><div class="doc-meta-label">Coverage Limit</div><div class="doc-meta-val">${c.coverage}</div></div>
+        <div class="doc-meta-cell"><div class="doc-meta-label">Policy Number</div><div class="doc-meta-val">${c.policy_number}</div></div>
+        <div class="doc-meta-cell"><div class="doc-meta-label">Insurer</div><div class="doc-meta-val">${c.insurer}</div></div>
+      </div>
+      ${secs}
+      <div class="doc-footer">
+        <div><div class="doc-sig-line"></div><div class="doc-sig-label">Authorised Signatory</div></div>
+        <div class="doc-watermark">INSURLE</div>
+        <div><div class="doc-sig-line"></div><div class="doc-sig-label">Policyholder Signature</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function buildInsurLE(c){
+  const lines=c.insurle_rules.split('\n').map(l=>hlProlog(l)).join('\n');
+  return `<div class="code-block">
+    <div class="code-hdr">
+      <div class="cdot cdr"></div><div class="cdot cdy"></div><div class="cdot cdg"></div>
+      <span class="cfile">${c.id}.pl — InsurLE Contract Rules</span>
+    </div>
+    <pre>${lines}</pre>
+  </div>`;
+}
+
+function buildFlowchartPanel(c){
+  return `<div class="flowchart-wrap">
+    <div style="font-family:var(--mono);font-size:.68rem;color:var(--text3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:16px">Decision Tree — ${c.name}</div>
+    ${buildFlowchartSVG(c.id)}
+    <div class="flowchart-legend">
+      <div class="leg-item"><div class="leg-dot" style="background:#5b8dee;opacity:.7"></div><div class="leg-label">Decision Gate</div></div>
+      <div class="leg-item"><div class="leg-dot" style="background:#3dba7a"></div><div class="leg-label">Pass / Yes path</div></div>
+      <div class="leg-item"><div class="leg-dot" style="background:#e05252"></div><div class="leg-label">Fail / Reject path</div></div>
+      <div class="leg-item"><div class="leg-dot" style="background:#c9a84c"></div><div class="leg-label">Start / Approve</div></div>
+    </div>
+  </div>`;
+}
+
+function buildPDFPanel(c){
+  return `<div class="pdf-viewer-container">
+    <div class="pdf-viewer-hdr">
+      <span class="pdf-hdr-title">📑 ${c.name} — Policy PDF Document</span>
+      <a href="${c.pdf_url}" target="_blank" class="pdf-open-link">Open in new tab ↗</a>
+    </div>
+    <iframe class="pdf-iframe" src="${c.pdf_url}" title="${c.name} PDF"></iframe>
+  </div>`;
+}
+
+/* ════ RENDER CLAIMS ════ */
+function renderClaims(){
+  const container=document.getElementById('claimsContainer');
+  container.innerHTML=CONTRACTS.map(c=>{
+    const claims=CLAIMS_DATA[c.id]||[];
+    const rows=claims.map((cl,i)=>`
+      <div class="claim-row">
+        <div class="claim-num">${String(i+1).padStart(2,'0')}</div>
+        <div class="claim-body">
+          <div class="claim-top">
+            <div class="claim-claimant">${cl.claimant}</div>
+            <span class="claim-badge ${cl.expected==='VALID'?'badge-valid':'badge-invalid'}">${cl.expected}</span>
+          </div>
+          <div class="claim-meta-row">
+            <span class="claim-meta-item">Claim ID: <span>${cl.id}</span></span>
+            <span class="claim-meta-item">Filed: <span>${cl.date}</span></span>
+            <span class="claim-meta-item">Incident: <span>${cl.incident_date}</span></span>
+            <span class="claim-meta-item">Amount: <span>${cl.amount}</span></span>
+          </div>
+          <div class="claim-desc">${cl.description}</div>
+          <div class="claim-actions">
+            <button class="btn btn-green" onclick="runValidation('${cl.id}','${c.id}')">🔍 Check Claim</button>
+            <button class="btn btn-gold" onclick="showClaimForm('${cl.id}','${c.id}')">📄 Claim Form</button>
+            <button class="btn btn-purple" onclick="showClaimFacts('${cl.id}','${c.id}')">⚙ Facts</button>
+          </div>
+        </div>
+      </div>`).join('');
+    return `<div class="claims-section open" id="csec-${c.id}">
+      <div class="claims-sec-hdr" onclick="toggleSection('${c.id}')">
+        <span class="claims-sec-icon">${c.icon}</span>
+        <span class="claims-sec-name">${c.name}</span>
+        <span class="claims-sec-type">${c.type}</span>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="claims-list">${rows}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleSection(id){
+  document.getElementById(`csec-${id}`).classList.toggle('open');
+}
+
+/* ════ MODAL HELPERS ════ */
+function openModal(subtitle,title,body,wide=false){
+  document.getElementById('modalSubtitle').textContent=subtitle;
+  document.getElementById('modalTitle').textContent=title;
+  document.getElementById('modalBody').innerHTML=body;
+  document.getElementById('modal').className=wide?'modal modal-wide':'modal';
+  document.getElementById('modalOverlay').style.display='flex';
+  document.body.style.overflow='hidden';
+}
+function closeModal(){document.getElementById('modalOverlay').style.display='none';document.body.style.overflow='';}
+function closeModalBg(e){if(e.target===document.getElementById('modalOverlay'))closeModal();}
+function switchModalTab(id,btn){
+  document.querySelectorAll('.modal-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.modal-tab-content').forEach(t=>t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('modal-tab-'+id).classList.add('active');
+}
+
+/* ════ CLAIM FORM ════ */
+function showClaimForm(claimId, contractId){
+  const c=CONTRACTS.find(x=>x.id===contractId);
+  const cl=CLAIMS_DATA[contractId].find(x=>x.id===claimId);
+  const isValid=cl.expected==='VALID';
+  const rows=cl.facts_prolog.slice(0,6).map(f=>{
+    const m=f.match(/(\w+)\(.*?,\s*(.+)\)\.$/);
+    if(!m) return '';
+    return `<div class="cf-check-item"><div class="cf-checkbox ${isValid?'checked':Math.random()>.4?'checked':''}">${isValid||Math.random()>.4?'✓':''}</div><span>${m[1].replace(/_/g,' ')}: ${m[2]}</span></div>`;
+  }).join('');
+  const formContent=`<div class="cf-doc">
+    <div class="cf-hdr">
+      <div class="cf-insurer">${c.icon} ${c.insurer}</div>
+      <div class="cf-form-id">FORM CF-${cl.id.toUpperCase()} · ${cl.date}</div>
+    </div>
+    <div class="cf-body">
+      <div class="cf-lines"></div>
+      <div class="cf-section-title">Claimant Information</div>
+      <div class="cf-row">
+        <div class="cf-field"><span class="cf-label">Full Name</span><span class="cf-val">${cl.claimant}</span></div>
+        <div class="cf-field"><span class="cf-label">Claim Reference</span><span class="cf-val">${cl.id.toUpperCase()}</span></div>
+      </div>
+      <div class="cf-row">
+        <div class="cf-field"><span class="cf-label">Date of Filing</span><span class="cf-val">${cl.date}</span></div>
+        <div class="cf-field"><span class="cf-label">Date of Incident</span><span class="cf-val">${cl.incident_date}</span></div>
+      </div>
+      <div class="cf-row">
+        <div class="cf-field"><span class="cf-label">Claim Amount</span><span class="cf-val" style="font-size:1rem;font-weight:700">${cl.amount}</span></div>
+        <div class="cf-field"><span class="cf-label">Policy Number</span><span class="cf-val">${c.policy_number}</span></div>
+      </div>
+      <div class="cf-section-title" style="margin-top:16px">Coverage Checklist</div>
+      <div class="cf-checklist">${rows}</div>
+      <div class="cf-narrative">${cl.description}</div>
+      <div class="cf-stamp ${isValid?'cf-stamp-valid':'cf-stamp-invalid'}">${isValid?'APPROVED\nFOR\nPROCESSING':'PENDING\nREVIEW\nREQUIRED'}</div>
+    </div>
+  </div>`;
+  
+  const pdfContent=`<div class="pdf-viewer-container">
+    <div class="pdf-viewer-hdr">
+      <div class="pdf-hdr-title">Original Claim PDF</div>
+      <a href="claim_pdfs/${claimId}.pdf" target="_blank" class="pdf-open-link">Open in new tab ↗</a>
+    </div>
+    <iframe class="pdf-iframe" src="claim_pdfs/${claimId}.pdf" title="Original ${claimId} PDF"></iframe>
+  </div>`;
+
+  const body=`
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchModalTab('form',this)">📋 Claim Form</button>
+      <button class="modal-tab" onclick="switchModalTab('pdf',this)">📄 Original PDF</button>
+    </div>
+    <div class="modal-tab-content active" id="modal-tab-form">
+      ${formContent}
+    </div>
+    <div class="modal-tab-content" id="modal-tab-pdf">
+      ${pdfContent}
+    </div>`;
+  
+  openModal(`${c.type} · ${c.name}`,`Claim Form: ${cl.claimant}`,body);
+}
+
+/* ════ CLAIM FACTS ════ */
+function showClaimFacts(claimId, contractId){
+  const c=CONTRACTS.find(x=>x.id===contractId);
+  const cl=CLAIMS_DATA[contractId].find(x=>x.id===claimId);
+  const lines=cl.facts_prolog.map(l=>hlProlog(l)).join('\n');
+  const body=`<div style="margin-bottom:14px;font-size:.84rem;color:var(--text2)">Claim facts as Prolog ground predicates — unified against contract rules to determine validity.</div>
+  <div class="pl-viewer">
+    <div class="pl-viewer-hdr">
+      <div class="pl-dots"><div class="pl-dot" style="background:#ff5f57"></div><div class="pl-dot" style="background:#febc2e"></div><div class="pl-dot" style="background:#28c840"></div></div>
+      <span style="font-family:var(--mono);font-size:.68rem;color:var(--text3);margin-left:8px">${cl.id}_facts.pl</span>
+    </div>
+    <div class="pl-content"><pre>%% Claim Facts — ${cl.claimant}
+%% Claim ID: ${cl.id} · Filed: ${cl.date}
+
+${lines}</pre></div>
+  </div>
+  <div style="margin-top:14px;padding:12px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius)">
+    <div style="font-family:var(--mono);font-size:.62rem;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.1em">Query</div>
+    <div class="pl-viewer"><div class="pl-content" style="padding:10px 16px"><pre style="color:var(--gold2)">?- valid_claim(${cl.id}).</pre></div></div>
+  </div>`;
+  openModal(`InsurLE Facts · ${c.type}`,cl.id,body);
+}
+
+/* ════ ANIMATED VALIDATION TREE ════ */
+function runValidation(claimId, contractId){
+  const c=CONTRACTS.find(x=>x.id===contractId);
+  const cl=CLAIMS_DATA[contractId].find(x=>x.id===claimId);
+  const isValid=cl.expected==='VALID';
+  const failedBranches=cl.validation_tree.filter(b=>!b.result);
+
+  // Build initial (all-pending) HTML
+  const branchesHTML=cl.validation_tree.map(b=>`
+    <div class="vbranch" id="vb-${b.id}" data-result="${b.result}">
+      <div class="vbranch-hdr">
+        <div class="vbranch-icon">${b.icon}</div>
+        <div class="vbranch-label">${b.label}</div>
+        <div class="vbranch-status vs-spin" id="vbs-${b.id}"></div>
+      </div>
+      <div class="vbranch-body" id="vbb-${b.id}">
+        ${b.sub_checks.map(s=>`
+          <div class="vsub" id="vs-${b.id}-${s.rule.replace(/\//g,'-')}" data-result="${s.result}">
+            <div class="vsub-hdr">
+              <span class="vsub-connector">├─</span>
+              <span class="vsub-rule">${s.rule}</span>
+              <span class="vsub-label">${s.label}</span>
+              <div class="vsub-status vs-spin" id="vss-${b.id}-${s.rule.replace(/\//g,'-')}"></div>
+            </div>
+            <div class="vsub-body" id="vsb-${b.id}-${s.rule.replace(/\//g,'-')}">
+              ${s.leaf_checks.map((lc,li)=>`
+                <div class="vleaf" id="vl-${b.id}-${s.rule.replace(/\//g,'-')}-${li}" data-result="${lc.result}">
+                  <div class="vleaf-icon vs-spin" id="vli-${b.id}-${s.rule.replace(/\//g,'-')}-${li}"></div>
+                  <span class="vleaf-check">${lc.check}</span>
+                  <span class="vleaf-fact">${lc.fact}</span>
+                  <span class="vleaf-reason ${lc.result?'rp':'rf'}" style="opacity:0" id="vlr-${b.id}-${s.rule.replace(/\//g,'-')}-${li}">${lc.reason}</span>
+                </div>`).join('')}
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>`).join('');
+
+  const prologLines=cl.validation_tree.map(b=>
+    b.sub_checks.map(s=>
+      `<span class="pl-comment">%% Checking ${s.rule} on ${cl.id}</span>\n` +
+      s.leaf_checks.map(lc=>`<span class="${lc.result?'pl-atom':'pl-op'}">${lc.result?'  PASS':'  FAIL'} :: ${lc.fact}</span>`).join('\n')
+    ).join('\n')
+  ).join('\n\n');
+
+  const conclusionProlog=isValid
+    ?`<span class="pl-pred">valid_claim</span>(<span class="pl-atom">${cl.id}</span>) <span class="pl-op">:-</span> <span style="color:var(--green)">TRUE ✓</span>\n<span style="color:var(--green)">Yes.</span>`
+    :`<span class="pl-pred">valid_claim</span>(<span class="pl-atom">${cl.id}</span>) <span class="pl-op">:-</span> <span style="color:var(--red)">FAIL ✗</span>\n${failedBranches.map(b=>`<span style="color:var(--red)">  ✗ ${b.label} — predicate resolution failed</span>`).join('\n')}\n<span style="color:var(--red)">No.</span>`;
+
+  const body=`
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchModalTab('tree',this)">🌳 Reasoning Tree</button>
+      <button class="modal-tab" onclick="switchModalTab('prolog',this)">⚙ Prolog Output</button>
+    </div>
+    <div class="modal-tab-content active" id="modal-tab-tree">
+      <div class="vtree-running-hdr" id="vtree-hdr">
+        <div class="vtree-spinner" id="vtree-spinner"></div>
+        <span id="vtree-hdr-text">Initialising InsurLE resolution engine…</span>
+      </div>
+      ${branchesHTML}
+      <div class="vtree-verdict ${isValid?'verdict-approve':'verdict-reject'}" id="vtree-verdict">
+        <div class="verdict-icon">${isValid?'✅':'❌'}</div>
+        <div>
+          <div class="verdict-title">CLAIM ${isValid?'APPROVED':'REJECTED'}</div>
+          <div class="verdict-sub">${isValid?`All ${cl.validation_tree.length} branches resolved — valid_claim(${cl.id}) is TRUE`:`${failedBranches.length} branch${failedBranches.length>1?'es':''} failed — valid_claim(${cl.id}) is FALSE`}</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-tab-content" id="modal-tab-prolog">
+      <div style="margin-bottom:12px;font-size:.83rem;color:var(--text2)">Prolog interpreter output for: <code style="font-family:var(--mono);color:var(--gold)">?- valid_claim(${cl.id}).</code></div>
+      <div class="pl-viewer">
+        <div class="pl-viewer-hdr">
+          <div class="pl-dots"><div class="pl-dot" style="background:#ff5f57"></div><div class="pl-dot" style="background:#febc2e"></div><div class="pl-dot" style="background:#28c840"></div></div>
+          <span style="font-family:var(--mono);font-size:.68rem;color:var(--text3);margin-left:8px">insurle_interpreter · SWI-Prolog compatible</span>
+        </div>
+        <div class="pl-content">
+          <pre><span class="pl-comment">%% Loading: ${c.id}.pl + ${cl.id}_facts.pl</span>
+<span class="pl-comment">%% Query: valid_claim(${cl.id})</span>
+
+${prologLines}
+
+<span class="pl-comment">%% Resolution</span>
+${conclusionProlog}</pre>
+        </div>
+      </div>
+    </div>`;
+
+  openModal(`Claim Verification · ${c.name}`,`${cl.claimant} · ${cl.amount}`,body,true);
+
+  // Animate the tree
+  animateTree(cl);
+}
+
+function animateTree(cl){
+  let globalDelay=300;
+  document.getElementById('vtree-hdr-text').textContent=`Evaluating ${cl.id} against contract rules…`;
+
+  cl.validation_tree.forEach((branch,bi)=>{
+    const bDelay=globalDelay + bi*600;
+    // Show branch
+    setTimeout(()=>{
+      const bEl=document.getElementById(`vb-${branch.id}`);
+      if(!bEl) return;
+      bEl.classList.add('visible');
+      document.getElementById('vtree-hdr-text').textContent=`Checking branch: ${branch.label}…`;
+    }, bDelay);
+
+    // Show body
+    setTimeout(()=>{
+      const bbEl=document.getElementById(`vbb-${branch.id}`);
+      if(bbEl) bbEl.classList.add('shown');
+
+      // Animate sub-checks
+      branch.sub_checks.forEach((sub,si)=>{
+        const sKey=`${branch.id}-${sub.rule.replace(/\//g,'-')}`;
+        const sDelay=si*450;
+
+        setTimeout(()=>{
+          const sEl=document.getElementById(`vs-${sKey}`);
+          if(sEl) sEl.classList.add('visible');
+        }, sDelay);
+
+        setTimeout(()=>{
+          const sbEl=document.getElementById(`vsb-${sKey}`);
+          if(sbEl) sbEl.classList.add('shown');
+
+          // Animate leaf checks
+          sub.leaf_checks.forEach((leaf,li)=>{
+            const lKey=`${sKey}-${li}`;
+            setTimeout(()=>{
+              const lEl=document.getElementById(`vl-${lKey}`);
+              if(lEl) lEl.classList.add('visible');
+            }, li*220);
+
+            setTimeout(()=>{
+              const liEl=document.getElementById(`vli-${lKey}`);
+              const lrEl=document.getElementById(`vlr-${lKey}`);
+              const lEl=document.getElementById(`vl-${lKey}`);
+              if(liEl){
+                liEl.classList.remove('vs-spin');
+                liEl.classList.add(leaf.result?'vs-pass':'vs-fail');
+                liEl.textContent=leaf.result?'✓':'✗';
+              }
+              if(lrEl) lrEl.style.opacity='1';
+              if(lEl) lEl.classList.add(leaf.result?'lp':'lf');
+            }, li*220+280);
+          });
+        }, sDelay+150);
+
+        // Resolve sub status
+        const subResolveDelay=sDelay + sub.leaf_checks.length*220+320;
+        setTimeout(()=>{
+          const ssEl=document.getElementById(`vss-${sKey}`);
+          const sEl=document.getElementById(`vs-${sKey}`);
+          if(ssEl){
+            ssEl.classList.remove('vs-spin');
+            ssEl.classList.add(sub.result?'vs-pass':'vs-fail');
+            ssEl.textContent=sub.result?'✓':'✗';
+          }
+          if(sEl) sEl.classList.add(sub.result?'sp':'sf');
+        }, subResolveDelay);
+      });
+
+      // Resolve branch status
+      const branchResolveDelay=branch.sub_checks.reduce((acc,s)=>acc+s.leaf_checks.length*220+500,0)+500;
+      setTimeout(()=>{
+        const bsEl=document.getElementById(`vbs-${branch.id}`);
+        const bEl=document.getElementById(`vb-${branch.id}`);
+        if(bsEl){
+          bsEl.classList.remove('vs-spin');
+          bsEl.classList.add(branch.result?'vs-pass':'vs-fail');
+          bsEl.textContent=branch.result?'✓':'✗';
+        }
+        if(bEl) bEl.classList.add(branch.result?'bp':'bf');
+      }, branchResolveDelay);
+
+      globalDelay+=branchResolveDelay+200;
+    }, bDelay+250);
+  });
+
+  // Final verdict
+  const totalDelay=globalDelay+cl.validation_tree.length*400+800;
+  setTimeout(()=>{
+    const hdr=document.getElementById('vtree-hdr');
+    const spinner=document.getElementById('vtree-spinner');
+    const verdict=document.getElementById('vtree-verdict');
+    const isValid=cl.expected==='VALID';
+    if(hdr){
+      hdr.style.borderColor=isValid?'rgba(61,186,122,.4)':'rgba(224,82,82,.4)';
+      hdr.style.background=isValid?'rgba(61,186,122,.06)':'rgba(224,82,82,.06)';
+    }
+    if(spinner){
+      spinner.style.animation='none';
+      spinner.style.border='none';
+      spinner.textContent=isValid?'✅':'❌';
+      spinner.style.fontSize='1rem';
+    }
+    document.getElementById('vtree-hdr-text').textContent=isValid?`Resolution complete — valid_claim(${cl.id}) = TRUE`:`Resolution complete — valid_claim(${cl.id}) = FALSE`;
+    if(verdict) verdict.classList.add('shown');
+  }, totalDelay);
+}
+
+/* ════ INIT ════ */
+renderContracts();
+renderClaims();
+</script>
+</body>
+</html>
